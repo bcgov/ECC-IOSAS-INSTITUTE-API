@@ -1,0 +1,53 @@
+# Build and Deploy to dev env.
+# Trigger with tag dev
+# Connected with repo environment 'dev'
+name: Deploy Application manually
+
+on:
+  workflow_dispatch:
+    inputs:
+      oc_env_suffix:
+        description: The Env suffic of oc name space
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - production
+
+env:
+  CLUSTER: https://api.silver.devops.gov.bc.ca:6443
+  AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_OCP4 }}
+  BUILD_REF: ${{ github.base_ref }}
+  APP_CONFIG_DEV: ${{ vars.APP_CONFIG_DEV }}
+  APP_CONFIG_TEST: ${{ vars.APP_CONFIG_TEST }}
+  APP_CONFIG_PROD: ${{ vars.APP_CONFIG_PROD }}
+  ENV_PREFIX: ${{ inputs.oc_env_suffix }}
+  NAMESPACE_TEST: ${{ vars.NAMESPACE_TEST }}
+  NAMESPACE_PROD: ${{ vars.NAMESPACE_PROD }}
+jobs:
+  api:
+    name: OpenShift Deploy
+    runs-on: ubuntu-latest
+    concurrency: ci-deploy-api-dev
+    timeout-minutes: 20
+    steps:
+      - name: Set Date time
+        run: echo "DATE_TIME=$(date ''+%Y%m%d%H%M%S'')" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deploy changes
+        working-directory: "./tools"
+        run: |
+          oc login --token="$AUTH_TOKEN" --server="$CLUSTER"
+          make print-status
+          make api-create-certificate
+          make init-api
+          make promote-api
+          make deploy-api
+      - name: Tag Deployment
+        run: |
+          git config user.name ${{ github.actor }}
+          git config user.email "iosas-action@gov.bc.ca"
+          git tag -a ${{ env.ENV_PREFIX}}-${{ env.DATE_TIME }} -m "D365: The deploy date time tag"
+          git push origin ${{ env.ENV_PREFIX}}-${{ env.DATE_TIME }}

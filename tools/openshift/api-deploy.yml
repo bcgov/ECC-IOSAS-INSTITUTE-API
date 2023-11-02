@@ -1,0 +1,144 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: ${NAME}
+labels:
+  project: ${PROJECT}
+  service: ${SERVICE_NAME}
+objects:
+  - apiVersion: apps.openshift.io/v1
+    kind: DeploymentConfig
+    metadata:
+      name: ${NAME}
+    spec:
+      replicas: "${{REPLICAS}}"
+      revisionHistoryLimit: 10
+      selector:
+        deploymentconfig: ${NAME}
+      strategy:
+        type: Rolling
+      triggers:
+        - imageChangeParams:
+            automatic: true
+            containerNames:
+              - ${NAME}
+            from:
+              kind: ImageStreamTag
+              name: ${IMAGE_STREAM_TAG}
+              namespace: ${BUILD_NAMESPACE}
+          type: ImageChange
+        - type: ConfigChange
+      template:
+        metadata:
+          labels:
+            deploymentconfig: ${NAME}
+        spec:
+          containers:
+            - image: ${IMAGE_REGISTRY}/${BUILD_NAMESPACE}/${IMAGE_STREAM_TAG}
+              imagePullPolicy: Always
+              name: ${NAME}
+              env:
+                - name: BUILD_ID
+                  value: ${BUILD_ID}
+              volumeMounts:
+                - name: tls-certs
+                  mountPath: "/etc/tls-certs"
+                  readOnly: true
+                - name: log-storage
+                  mountPath: /logs
+                - name: config-env
+                  mountPath: /app/appsettings.json
+                  subPath: appsettings.json
+              ports:
+                - containerPort: "${{PORT}}"
+                  protocol: TCP
+                - containerPort: 443
+                  protocol: TCP
+              resources:
+                limits:
+                  cpu: ${CPU_LIMIT}
+                  memory: ${MEMORY_LIMIT}
+                requests:
+                  cpu: ${CPU_REQUEST}
+                  memory: ${MEMORY_REQUEST}
+              readinessProbe:
+                failureThreshold: 10
+                httpGet:
+                  path: /api/Health
+                  port: "${{PORT}}"
+                  scheme: HTTP
+                initialDelaySeconds: 40
+                periodSeconds: 30
+                timeoutSeconds: 30
+              livenessProbe:
+                failureThreshold: 10
+                httpGet:
+                  path: /api/health
+                  port: "${{PORT}}"
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 30
+                timeoutSeconds: 15
+          volumes:
+            - name: log-storage
+              emptyDir: {}
+            - name: config-env
+              configMap:
+                name: ${NAME}-${PREFIX}-config
+            - name: tls-certs
+              secret:
+               secretName: ${NAME}-${PREFIX}-tls
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      annotations:
+        service.alpha.openshift.io/serving-cert-secret-name: ${NAME}-${PREFIX}-tls
+        openshift.io/generated-by: OpenShiftNewApp
+      creationTimestamp:
+      labels:
+        app: ${NAME}
+      name: ${NAME}
+    spec:
+      ports:
+        - name: 5091-tcp
+          port:  ${{PORT}}
+          protocol: TCP
+          targetPort: ${{PORT}}
+        - name: 443-https
+          port: 443
+          protocol: TCP 
+          targetPort: 443
+      selector:
+        deploymentconfig: ${NAME}
+parameters:
+  - name: BUILD_ID
+    value: "0"
+  - name: VERSION
+    value: "init"
+  - name: NAME
+    required: true
+  - name: PREFIX
+    required: true
+  - name: PROJECT
+    value: iosas
+  - name: SERVICE_NAME
+    value: api
+  - name: CPU_LIMIT
+    value: "100m"
+  - name: MEMORY_LIMIT
+    value: "200Mi"
+  - name: CPU_REQUEST
+    value: "50m"
+  - name: MEMORY_REQUEST
+    value: "100Mi"
+  - name: REPLICAS
+    value: "2"
+  - name: PORT
+    value: "5091"
+  - name: IMAGE_STREAM_TAG
+    required: true
+  - name: BUILD_NAMESPACE
+    required: true
+  - name: IMAGE_REGISTRY
+    value: image-registry.openshift-image-registry.svc:5000
+  

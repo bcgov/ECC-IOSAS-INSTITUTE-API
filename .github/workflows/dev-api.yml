@@ -1,0 +1,46 @@
+# Build and Deploy to dev env.
+# Trigger with tag dev
+# Connected with repo environment 'dev'
+name: OpenShift Build and Deploy to api (Dev)
+
+on:
+  push:
+    branches:
+      - main-dev
+      - dev
+  workflow_dispatch:
+
+env:
+  CLUSTER: https://api.silver.devops.gov.bc.ca:6443
+  AUTH_TOKEN: ${{ secrets.AUTH_TOKEN_OCP4 }}
+  BUILD_REF: ${{ github.base_ref }}
+  APP_CONFIG_DEV: ${{ vars.APP_CONFIG_DEV }}
+  NAMESPACE_DEV: d1273d-dev
+jobs:
+  api:
+    name: OpenShift Build & Deploy
+    runs-on: ubuntu-latest
+    concurrency: ci-build-api-dev
+    timeout-minutes: 20
+    env:
+      ENV_PREFIX: dev
+    steps:
+      - name: Set Date time
+        run: echo "DATE_TIME=$(date ''+%Y%m%d%H%M%S'')" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build changes
+        working-directory: "./tools"
+        run: |
+          oc login --token="$AUTH_TOKEN" --server="$CLUSTER"
+          make print-status
+          make init-api
+          make build-api
+          make promote-api
+          make deploy-api
+      - name: Tag the build
+        run: |
+          git config user.name ${{ github.actor }}
+          git config user.email "iosas-action@gov.bc.ca"
+          git tag -a build-d365-${{ env.DATE_TIME }} -m "Build-d365: The build date time tag"
+          git push origin build-d365-${{ env.DATE_TIME }}
