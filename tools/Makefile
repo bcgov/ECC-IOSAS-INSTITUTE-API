@@ -3,7 +3,7 @@ export $(shell sed 's/=.*//' ../.env)
 
 .DEFAULT_GOAL := default
 export GIT_LOCAL_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
-export APP_NAME := $(or $(PROJECT_NAME), ecc-iosas-d365)
+export APP_NAME := $(or $(PROJECT_NAME), ecc-iosas-d365-institute)
 export BUILD_ID := $(or $(BUILD_ID), 1)
 export TEMPLATE_FILE_NAME := $(or $(TEMPLATE_FILE_NAME), $$FILE)
 export BUILD_REF := $(or $(BUILD_REF), $(GIT_LOCAL_BRANCH))
@@ -24,7 +24,7 @@ export NAMESPACE_DEV := $(or $(NAMESPACE_DEV), d1273d-dev)
 export NAMESPACE_TEST := $(or $(NAMESPACE_TEST), d1273d-dev)
 export NAMESPACE_PROD := $(or $(NAMESPACE_PROD), d1273d-dev)
 
-export REPO_NAME:=ECC-IOSAS-D365
+export REPO_NAME:=ECC-IOSAS-INSTITUTE-API
 
 
 MAX_CPU=100m
