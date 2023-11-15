@@ -1,0 +1,58 @@
+name: Create Tag
+
+env:
+  OPENSHIFT_SERVER: ${{ secrets.OPENSHIFT_SERVER }}
+  OPENSHIFT_TOKEN: ${{ secrets.OPENSHIFT_TOKEN }}
+  OPENSHIFT_NAMESPACE: ${{ secrets.CCOF_NAMESPACE_NO_ENV }}-dev
+
+  REPO_NAME: "educ-ccof-d365"
+  BRANCH: ${{ github.ref_name }}
+  APP_NAME_BACKEND: "d365api"
+  NAMESPACE: ${{ secrets.CCOF_NAMESPACE_NO_ENV }}
+
+on:
+  # https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version Number'
+        required: true
+
+jobs:
+  openshift-ci-cd:
+    name: Tag Image
+    runs-on: ubuntu-20.04
+    environment: dev
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Create tag
+      uses: actions/github-script@v5
+      with:
+        script: |
+          github.rest.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/${{ github.event.inputs.version }}',
+            sha: context.sha
+          })
+
+    - name: Install oc
+      uses: redhat-actions/openshift-tools-installer@v1
+      with:
+        oc: 4
+
+      # https://github.com/redhat-actions/oc-login#readme
+    - uses: actions/checkout@v2
+    - name: Tag in OpenShift
+      run: |
+        set -eux
+        # Login to OpenShift and select project
+        oc login --token=${{ env.OPENSHIFT_TOKEN }} --server=${{ env.OPENSHIFT_SERVER }}
+        oc project ${{ env.OPENSHIFT_NAMESPACE }}
+
+        oc tag ${{ env.NAMESPACE }}-dev/${{ env.REPO_NAME }}-${{ env.APP_NAME_BACKEND }}-${{ env.BRANCH }}:latest ${{ env.NAMESPACE }}-dev/${{ env.REPO_NAME }}-${{ env.APP_NAME_BACKEND }}-${{ env.BRANCH }}:${{ github.event.inputs.version }}
+
+        #oc tag ${{ env.NAMESPACE }}-dev/${{ env.REPO_NAME }}-backend-${{ env.BRANCH }}:latest ${{ env.NAMESPACE }}-dev/${{ env.REPO_NAME }}-backend-${{ env.BRANCH }}:${{ github.event.inputs.version }}
