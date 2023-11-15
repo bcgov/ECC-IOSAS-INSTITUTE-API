@@ -28,8 +28,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             try
             {
                 _logger.LogInformation("Received request to update authoroties for :" + applicationName);
-                var app = ApplicationFactory.Create(_d365webapiservice, applicationName);
-                //var response = app.AuthorityUpsert(applicationName, value);
+                //var app = ApplicationFactory.Create(_d365webapiservice, applicationName);
+                var response = app.AuthorityUpsert(applicationName, value);
 
                 var isAuthortyUpserted = _authorityService.upsert(applicationName, value);
 
