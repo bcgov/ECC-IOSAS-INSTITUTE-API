@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using static System.Net.Mime.MediaTypeNames;
+using ECC.Institute.CRM.IntegrationAPI.Model;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 {
@@ -23,15 +24,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpPost("{applicationName}/AuthorityUpsert")]
-        public ActionResult<string> AuthorityUpsert(string applicationName, [FromBody] dynamic value)
+        public ActionResult<string> AuthorityUpsert(string applicationName)
         {
             try
             {
                 _logger.LogInformation("Received request to update authoroties for :" + applicationName);
-                //var app = ApplicationFactory.Create(_d365webapiservice, applicationName);
-                var response = app.AuthorityUpsert(applicationName, value);
+                var app = ApplicationFactory.Create(_d365webapiservice, applicationName);
+                //var response = app.AuthorityUpsert(applicationName, value);
 
-                var isAuthortyUpserted = _authorityService.upsert(applicationName, value);
+                /*var isAuthortyUpserted = _authorityService.upsert(applicationName, value);
 
                 if (isAuthortyUpserted)
                 {
@@ -41,8 +42,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 
                     // Handle falase response
                     throw new NotImplementedException();
-                }
-                return Ok($"To Do");
+                }*/
+                var list = Type.GetType("ECC.Institute.CRM.IntegrationAPI.Model.SchoolAuthority")?.GetProperties();
+                var result = list?.Select((item) => item.ToString()) ?? new string[] { "NA" };
+                _logger.LogInformation("Props:", result);
+                return Ok($"OK");
                 //else
                 //{
                 //    return StatusCode((int)response.StatusCode, "Failed to upsert.");

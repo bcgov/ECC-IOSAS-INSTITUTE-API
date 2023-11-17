@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Net;
+
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
     public class SchoolDistrict
@@ -51,6 +55,41 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonPropertyName("notes")]
         public Note[]? Notes { get; set; }
+
+        public JObject ToD365EntityModel()
+        {
+            var result = new JObject();
+            result["DistrictNo"] = this.DistrictNumber;
+            result["edu_name"] = this.DisplayName;
+            result["edu_districtstatus"] = this.DistrictStatusCode;
+            result["Region_edu_internalcode"] = this.DistrictRegionCode;
+            result["edu_fax"] = this.FaxNumber;
+            result["edu_email"] = this.Email;
+            result["edu_website"] = this.Website;
+            // Mail Address Mapping
+            if (this.Addresses?.Length > 0)
+            {
+                var address = this.Addresses[0];
+                result["edu_mailaddressline1"] = address.AddressLine1;
+                result["edu_mailaddressline2"] = address.AddressLine2;
+                result["edu_mailcity"] = address.City;
+                result["edu_mailpostalcode"] = address.Postal;
+                result["edu_mailprovince"] = address.ProvinceCode;
+                result["edu_mailcountry"] = address.CountryCode;
+            }
+            // Address Mapping
+            if (this.Addresses?.Length > 1)
+            {
+                var address = this.Addresses[1];
+                result["edu_addressline1"] = address.AddressLine1;
+                result["edu_ddressline2"] = address.AddressLine2;
+                result["edu_city"] = address.City;
+                result["edu_postalcode"] = address.Postal;
+                result["edu_province"] = address.ProvinceCode;
+                result["edu_country"] = address.CountryCode;
+            }
+            return result;
+        }
     }
 
     public partial class Note
