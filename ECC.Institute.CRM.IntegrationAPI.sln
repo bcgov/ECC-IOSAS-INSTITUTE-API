@@ -5,6 +5,11 @@ VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ECC.Institute.CRM.IntegrationAPI", "SchoolInfoIntegration\ECC.Institute.CRM.IntegrationAPI.csproj", "{0F5E370F-1A3F-4B95-A033-C1409E1F6C1B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{296C8970-C3EB-4247-B766-F7D2F3FEF5BE}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

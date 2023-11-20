@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using static System.Net.Mime.MediaTypeNames;
+using ECC.Institute.CRM.IntegrationAPI.Model;
+using ECC.Institute.CRM.IntegrationAPI.Filters;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 {
@@ -23,30 +25,18 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpPost("{applicationName}/AuthorityUpsert")]
-        public ActionResult<string> AuthorityUpsert(string applicationName, [FromBody] dynamic value)
+        [ServiceFilter(typeof (ValidationFilterAttribute))]
+        public ActionResult<string> AuthorityUpsert(string applicationName, [FromBody] SchoolAuthority[] authorities)
         {
             try
             {
                 _logger.LogInformation("Received request to update authoroties for :" + applicationName);
-                //var app = ApplicationFactory.Create(_d365webapiservice, applicationName);
-                var response = app.AuthorityUpsert(applicationName, value);
-
-                var isAuthortyUpserted = _authorityService.upsert(applicationName, value);
-
-                if (isAuthortyUpserted)
+                foreach (SchoolAuthority authority in authorities)
                 {
-                    return Ok($"To Do");
+                    _logger.LogInformation("Received authority number = " + authority.AuthorityNumber + ", id = " + authority.IndependentAuthorityId);
                 }
-                else {
-
-                    // Handle falase response
-                    throw new NotImplementedException();
-                }
-                return Ok($"To Do");
-                //else
-                //{
-                //    return StatusCode((int)response.StatusCode, "Failed to upsert.");
-                //}
+                return Ok(D365ModelUtility.ToJSONArray(authorities));
+                
             }
             catch (Exception ex)
             {
@@ -54,21 +44,18 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             }            
         }
 
-        [HttpPost("{application}/DistrictUpsert")]
-        public ActionResult<string> DistrictUpsert(string application, [FromBody] dynamic value)
+        [HttpPost("{applicationName}/DistrictUpsert")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
+        public ActionResult<string> DistrictUpsert(string applicationName, [FromBody] SchoolDistrict[] districts)
         {
             try
             {
-                var app = ApplicationFactory.Create(_d365webapiservice, application);
-                var response = app.DistrictUpsert(value);
-                if (response.IsSuccessStatusCode)
+                _logger.LogInformation("Received request to update authoroties for :" + applicationName);
+                foreach (SchoolDistrict district in districts)
                 {
-                    return Ok($"To Do");
+                    _logger.LogInformation("Received district number = " + district.DistrictNumber + ", name = " + district.DisplayName);
                 }
-                else
-                {
-                    return StatusCode((int)response.StatusCode, "Failed to upsert.");
-                }
+                return Ok(D365ModelUtility.ToJSONArray(districts));
             }
             catch (Exception ex)
             {
@@ -76,22 +63,17 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             }
         }
 
-        [HttpPost("{application}/SchoolUpsert")]
-        public ActionResult<string> SchoolUpsert(string application, [FromBody] dynamic value)
+        [HttpPost("{applicationName}/SchoolUpsert")]
+        public ActionResult<string> SchoolUpsert(string applicationName, [FromBody] School[] schools)
         {
             try
             {
-                // TODO: Add log for the request 
-                var app = ApplicationFactory.Create(_d365webapiservice, application);
-                var response = app.SchoolUpsert(value);
-                if (response.IsSuccessStatusCode)
+                _logger.LogInformation("Received request to update authoroties for :" + applicationName);
+                foreach (School school in schools)
                 {
-                    return Ok($"To Do");
+                    _logger.LogInformation("Received school number = " + school.Mincode + ", name = " + school.DisplayName);
                 }
-                else
-                {
-                    return StatusCode((int)response.StatusCode, "Failed to upsert.");
-                }
+                return Ok(D365ModelUtility.ToJSONArray(schools));
             }
             catch (Exception ex)
             {
