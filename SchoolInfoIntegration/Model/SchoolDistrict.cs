@@ -66,21 +66,21 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_fax"] = this.FaxNumber;
             result["edu_email"] = this.Email;
             result["edu_website"] = this.Website;
+            var empty = Array.Empty<Address>();
             // Mail Address Mapping
-            if (this.Addresses?.Length > 0)
+            if (this.Addresses?.Length > 0 && Address.getAddressWithType(AddressType.Mailing.Value, (this.Addresses ?? empty)) is var mailingAddress && mailingAddress != null)
             {
-                var address = this.Addresses[0];
-                result["edu_mailaddressline1"] = address.AddressLine1;
-                result["edu_mailaddressline2"] = address.AddressLine2;
-                result["edu_mailcity"] = address.City;
-                result["edu_mailpostalcode"] = address.Postal;
-                result["edu_mailprovince"] = address.ProvinceCode;
-                result["edu_mailcountry"] = address.CountryCode;
+                result["edu_mailaddressline1"] = mailingAddress.AddressLine1;
+                result["edu_mailaddressline2"] = mailingAddress.AddressLine2;
+                result["edu_mailcity"] = mailingAddress.City;
+                result["edu_mailpostalcode"] = mailingAddress.Postal;
+                result["edu_mailprovince"] = mailingAddress.ProvinceCode;
+                result["edu_mailcountry"] = mailingAddress.CountryCode;
             }
             // Address Mapping
-            if (this.Addresses?.Length > 1)
+            if (this.Addresses?.Length > 0 && Address.getAddressWithType(AddressType.Address.Value, (this.Addresses ?? empty)) is var address  && address != null)
             {
-                var address = this.Addresses[1];
+
                 result["edu_addressline1"] = address.AddressLine1;
                 result["edu_ddressline2"] = address.AddressLine2;
                 result["edu_city"] = address.City;

@@ -14,6 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Filters\" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\.editorconfig" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Filters\" />
   </ItemGroup>
 </Project>

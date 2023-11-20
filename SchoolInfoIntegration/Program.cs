@@ -4,6 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Configuration;
 using System.Runtime.Intrinsics.Arm;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using ECC.Institute.CRM.IntegrationAPI.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +14,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddControllers(options =>
 {
-    options.ReturnHttpNotAcceptable = true;
+    // Removing: Will use custom validation middleware to validate 
+    //options.ReturnHttpNotAcceptable = true;
 }).AddNewtonsoftJson();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -22,12 +25,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<ID365AuthenticationService, AuthenticationServiceMSAL>();
 builder.Services.AddTransient<ID365WebAPIService, D365WebAPIService>();
 builder.Services.AddScoped<IAuthoritiesService, AuthoritiesService>();
-//builder.Services.AddScoped<D365AppSettings>();
+builder.Services.AddScoped<ValidationFilterAttribute>();
+
 builder.Services.Configure<List<D365AppSettings>>(builder.Configuration.GetSection("D365AppSettings"));
+
+// Disable default validation, sending 422 with model data validation error
+builder.Services.Configure<ApiBehaviorOptions>(options
+    => options.SuppressModelStateInvalidFilter = true);
 
 //services.Configure<List<IDP>>(Configuration.GetSection("IDP"));
 
 var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
