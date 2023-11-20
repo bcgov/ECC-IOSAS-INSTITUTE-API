@@ -7,12 +7,25 @@ using System.Net;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
+    public interface D365Model
+    {
+        public JObject ToD365EntityModel();
+    }
+
+    public class D365ModelUtility
+    {
+        public static JObject[] ToJSONArray(D365Model[] items)
+        {
+            return items.Select(item => item.ToD365EntityModel()).ToArray() ;
+        }
+    }
+
     public class AddressType
     {
         private AddressType(string input) { this.Value = input; }
         public string Value { get; private set; }
         public static AddressType Mailing { get { return new AddressType("MAILING"); } }
-        public static AddressType Address { get { return new AddressType("ADDRESS"); } }
+        public static AddressType Physical { get { return new AddressType("PHYSICAL"); } } // Physical 
         public override string ToString()
         {
             return Value;
@@ -72,9 +85,16 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("independentAuthorityId")]
         public string? IndependentAuthorityId { get; set; }
 
-        public static Address? getAddressWithType(string type, Address[] addresses)
+        public static Address? getAddressWithType(string type, Address[]? addresses)
         {
-            return Array.Find(addresses, (adress) => adress.AddressTypeCode == type);
+            if (addresses?.Length > 0)
+            {
+                return Array.Find(addresses, (adress) => adress.AddressTypeCode == type);
+            } else
+            {
+                return null;
+            }
+            
         }
     }
 

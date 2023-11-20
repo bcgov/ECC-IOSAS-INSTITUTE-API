@@ -35,7 +35,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 {
                     _logger.LogInformation("Received authority number = " + authority.AuthorityNumber + ", id = " + authority.IndependentAuthorityId);
                 }
-                return Ok($"OK");
+                return Ok(D365ModelUtility.ToJSONArray(authorities));
                 
             }
             catch (Exception ex)
@@ -55,7 +55,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 {
                     _logger.LogInformation("Received district number = " + district.DistrictNumber + ", name = " + district.DisplayName);
                 }
-                return Ok($"OK");
+                return Ok(D365ModelUtility.ToJSONArray(districts));
             }
             catch (Exception ex)
             {
@@ -73,7 +73,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 {
                     _logger.LogInformation("Received school number = " + school.Mincode + ", name = " + school.DisplayName);
                 }
-                return Ok($"OK");
+                return Ok(D365ModelUtility.ToJSONArray(schools));
             }
             catch (Exception ex)
             {

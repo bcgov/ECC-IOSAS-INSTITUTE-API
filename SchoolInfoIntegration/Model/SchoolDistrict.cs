@@ -6,7 +6,7 @@ using System.Net;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
-    public class SchoolDistrict
+    public class SchoolDistrict: D365Model
     {
         [JsonPropertyName("createUser")]
         public string? CreateUser { get; set; }
@@ -68,7 +68,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_website"] = this.Website;
             var empty = Array.Empty<Address>();
             // Mail Address Mapping
-            if (this.Addresses?.Length > 0 && Address.getAddressWithType(AddressType.Mailing.Value, (this.Addresses ?? empty)) is var mailingAddress && mailingAddress != null)
+            if (Address.getAddressWithType(AddressType.Mailing.Value, this.Addresses) is var mailingAddress && mailingAddress != null)
             {
                 result["edu_mailaddressline1"] = mailingAddress.AddressLine1;
                 result["edu_mailaddressline2"] = mailingAddress.AddressLine2;
@@ -77,8 +77,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["edu_mailprovince"] = mailingAddress.ProvinceCode;
                 result["edu_mailcountry"] = mailingAddress.CountryCode;
             }
-            // Address Mapping
-            if (this.Addresses?.Length > 0 && Address.getAddressWithType(AddressType.Address.Value, (this.Addresses ?? empty)) is var address  && address != null)
+            // Physical Address Mapping
+            if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
             {
 
                 result["edu_addressline1"] = address.AddressLine1;

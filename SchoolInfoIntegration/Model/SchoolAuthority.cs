@@ -10,7 +10,7 @@ using System.ComponentModel.DataAnnotations;
  */
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
-    public partial class SchoolAuthority
+    public partial class SchoolAuthority: D365Model
     {
         [JsonPropertyName("createUser")]
         public string? CreateUser { get; set; }
@@ -100,10 +100,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["iosas_authoritytype"] = this.AuthorityTypeCode;
             result["iosas_opendate"] = this.OpenedDate;
             result["iosas_closedate"] = this.ClosedDate;
-            // Address Mapping
-            if (this.Addresses?.Length > 0)
+            // Physical Address Mapping
+            if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
             {
-                var address = this.Addresses[0];
                 result["iosas_addressline1"] = address.AddressLine1;
                 result["iosas_addressline2"] = address.AddressLine2;
                 result["iosas_addresscity"] = address.City;
@@ -111,16 +110,16 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["iosas_addressprovince"] = address.ProvinceCode;
                 result["iosas_addresscountry"] = address.CountryCode;
             }
-            // Contact Mapping
+            // Contact Mapping: Finding oldest Auth type contact
             const string AuthTypeCode = "INDAUTHREP";
-            var authContacts = (Contact[]?)(this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode));
+            var authContacts = this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode).ToArray();
             var sortedAuthContacts = authContacts?.OrderBy((contact) => contact.CreateDate).ToArray();
             if (sortedAuthContacts?.Length > 0)
             {
                 var contact = sortedAuthContacts[0];
                 result["iosas_firstname"] = contact.FirstName;
                 result["iosas_lastname"] = contact.LastName;
-                result["iosas_maincontact"] = contact.AuthorityContactId;
+                result["iosas_maincontact"] = contact.Email;
             }
             return result;
         }

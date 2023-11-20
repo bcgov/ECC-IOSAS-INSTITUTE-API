@@ -6,7 +6,7 @@ using System.Net;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
-    public partial class School
+    public partial class School: D365Model
     {
         [JsonPropertyName("createUser")]
         public string? CreateUser { get; set; }
