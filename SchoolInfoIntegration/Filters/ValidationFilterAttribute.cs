@@ -11,6 +11,14 @@ namespace ECC.Institute.CRM.IntegrationAPI.Filters
             {
                 System.Console.WriteLine("ValidationFilterAttribute: Validation error");
                 context.Result = new UnprocessableEntityObjectResult(context.ModelState);
+            } else if (context.ActionArguments.ContainsKey("applicationName"))
+            {
+                var applicationName = context.ActionArguments["applicationName"];
+                string[] validValues = { "iosas", "isf" };
+                if (!validValues.Contains(applicationName))
+                {
+                    context.Result = new UnprocessableEntityObjectResult("The application name should be iosas or isf");
+                }
             }
         }
         public void OnActionExecuted(ActionExecutedContext context) { }

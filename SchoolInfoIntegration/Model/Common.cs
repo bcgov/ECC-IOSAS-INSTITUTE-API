@@ -10,6 +10,44 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     public interface D365Model
     {
         public JObject ToD365EntityModel();
+        public string UpsertQuery();
+        public string GetQuery();
+        public string IdQuery(string id);
+        public string EntityName();
+        public string Key();
+        public string KeyValue();
+    }
+
+    public class D365ModelMetdaData
+    {
+        public string entityName;
+        public string primaryKey;
+        public string businessKey;
+        public string tag;
+        private D365ModelMetdaData(string tag, string entity, string key, string businessKey)
+        {
+            this.tag = tag;
+            entityName = entity;
+            primaryKey = key;
+            this.businessKey = businessKey;
+        }
+        public string SelectQuery()
+        {
+            return $"{entityName}?#select={businessKey},{primaryKey}";
+        }
+        public string BuisnessKeyValue(JObject obj)
+        {
+            return obj.GetValue(businessKey)?.ToString() ?? "";
+        }
+        public string KeyValue(JObject obj)
+        {
+            return obj.GetValue(primaryKey)?.ToString() ?? "";
+        }
+        public string IdQuery(string id)
+        {
+            return $"{entityName}({id})";
+        }
+        public static D365ModelMetdaData SchoolDistrict { get { return new D365ModelMetdaData("school-district", "edu_schooldistricts", "edu_schooldistrictid", "edu_number"); } }
     }
 
     public class D365ModelUtility
@@ -30,6 +68,14 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             return Value;
         }
+    }
+
+    public class DynamicEntityName
+    {
+        public string Value { get; private set; }
+        private DynamicEntityName(string entityName) { this.Value = entityName; }
+        public static DynamicEntityName SchoolAuthority { get { return new DynamicEntityName("edu_SchoolAuthority"); } }
+        public static DynamicEntityName SchoolDistrict { get { return new DynamicEntityName("edu_SchoolDistrict"); } }
     }
 
     
@@ -157,6 +203,36 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonPropertyName("expiryDate")]
         public string? ExpiryDate { get; set; }
+    }
+
+    public partial class Note
+    {
+        [JsonPropertyName("createUser")]
+        public string? CreateUser { get; set; }
+
+        [JsonPropertyName("updateUser")]
+        public string? UpdateUser { get; set; }
+
+        [JsonPropertyName("createDate")]
+        public string? CreateDate { get; set; }
+
+        [JsonPropertyName("updateDate")]
+        public string? UpdateDate { get; set; }
+
+        [JsonPropertyName("noteId")]
+        public string? NoteId { get; set; }
+
+        [JsonPropertyName("schoolId")]
+        public string? SchoolId { get; set; }
+
+        [JsonPropertyName("districtId")]
+        public string? DistrictId { get; set; }
+
+        [JsonPropertyName("independentAuthorityId")]
+        public string? IndependentAuthorityId { get; set; }
+
+        [JsonPropertyName("content")]
+        public string? Content { get; set; }
     }
 }
 

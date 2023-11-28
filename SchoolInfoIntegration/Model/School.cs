@@ -122,6 +122,32 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }*/
             return result;
         }
+
+        public string UpsertQuery()
+        {
+
+            return $"";
+        }
+        public string GetQuery()
+        {
+            return WebUtility.UrlEncode($"");
+        }
+        public string IdQuery(string id)
+        {
+            return "";
+        }
+        public string EntityName()
+        {
+            return "";
+        }
+        public string Key()
+        {
+            return "";
+        }
+        public string KeyValue()
+        {
+            return "";
+        }
     }
 }
 

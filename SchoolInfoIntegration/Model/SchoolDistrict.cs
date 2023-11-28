@@ -59,13 +59,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public JObject ToD365EntityModel()
         {
             var result = new JObject();
-            result["DistrictNo"] = this.DistrictNumber;
+            result["edu_number"] = this.KeyValue();
+            result["edu_internalcode"] = this.DistrictNumber;
             result["edu_name"] = this.DisplayName;
-            result["edu_districtstatus"] = this.DistrictStatusCode;
-            result["Region_edu_internalcode"] = this.DistrictRegionCode;
+            result["edu_districtstatus"] = this.DistrictStatusCode == "ACTIVE" ? true: false; // Active : 1, Inactiave: 0
+            // result["edu_region"] = this.DistrictRegionCode; // TODO: Have to find a mapping logic
             result["edu_fax"] = this.FaxNumber;
             result["edu_email"] = this.Email;
             result["edu_website"] = this.Website;
+            result["iosas_externalid"] = this.DistrictId;
             var empty = Array.Empty<Address>();
             // Mail Address Mapping
             if (Address.getAddressWithType(AddressType.Mailing.Value, this.Addresses) is var mailingAddress && mailingAddress != null)
@@ -90,36 +92,34 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
             return result;
         }
-    }
 
-    public partial class Note
-    {
-        [JsonPropertyName("createUser")]
-        public string? CreateUser { get; set; }
+        public string UpsertQuery()
+        {
 
-        [JsonPropertyName("updateUser")]
-        public string? UpdateUser { get; set; }
+            return $"";
+        }
 
-        [JsonPropertyName("createDate")]
-        public string? CreateDate { get; set; }
-
-        [JsonPropertyName("updateDate")]
-        public string? UpdateDate { get; set; }
-
-        [JsonPropertyName("noteId")]
-        public string? NoteId { get; set; }
-
-        [JsonPropertyName("schoolId")]
-        public string? SchoolId { get; set; }
-
-        [JsonPropertyName("districtId")]
-        public string? DistrictId { get; set; }
-
-        [JsonPropertyName("independentAuthorityId")]
-        public string? IndependentAuthorityId { get; set; }
-
-        [JsonPropertyName("content")]
-        public string? Content { get; set; }
+        public string GetQuery()
+        {
+            return $"edu_schooldistricts?#select=edu_name,edu_schooldistrictid";
+        }
+        public string IdQuery(string id)
+        {
+            return "";
+        }
+        public string EntityName()
+        {
+            return "edu_schooldistricts";
+        }
+        public string Key()
+        {
+            return "edu_number";
+        }
+        public string KeyValue()
+        {
+            var value = this.DistrictNumber ?? "";
+            return value.StartsWith("SD") ? value : $"SD{value}";
+        }
     }
 }
 

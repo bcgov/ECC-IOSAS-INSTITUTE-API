@@ -10,6 +10,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ServiceFilter(typeof(ValidationFilterAttribute))]
     public class SchoolController : ControllerBase
     {
         private readonly ID365WebAPIService _d365webapiservice;
@@ -25,17 +26,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpPost("{applicationName}/AuthorityUpsert")]
-        [ServiceFilter(typeof (ValidationFilterAttribute))]
-        public ActionResult<string> AuthorityUpsert(string applicationName, [FromBody] SchoolAuthority[] authorities)
+        public ActionResult<string> AuthorityUpsert([FromRoute] string applicationName, [FromBody] SchoolAuthority[] authorities)
         {
             try
             {
-                _logger.LogInformation("Received request to update authoroties for :" + applicationName);
-                foreach (SchoolAuthority authority in authorities)
-                {
-                    _logger.LogInformation("Received authority number = " + authority.AuthorityNumber + ", id = " + authority.IndependentAuthorityId);
-                }
-                return Ok(D365ModelUtility.ToJSONArray(authorities));
+                _logger.LogInformation($"Received request to update authoroties for :" + applicationName);
+                var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
+                return Ok(app.AuthorityUpsert(authorities));
                 
             }
             catch (Exception ex)
@@ -45,8 +42,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpPost("{applicationName}/DistrictUpsert")]
-        [ServiceFilter(typeof(ValidationFilterAttribute))]
-        public ActionResult<string> DistrictUpsert(string applicationName, [FromBody] SchoolDistrict[] districts)
+        public ActionResult<string> DistrictUpsert([FromRoute] string applicationName, [FromBody] SchoolDistrict[] districts)
         {
             try
             {
@@ -55,7 +51,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 {
                     _logger.LogInformation("Received district number = " + district.DistrictNumber + ", name = " + district.DisplayName);
                 }
-                return Ok(D365ModelUtility.ToJSONArray(districts));
+                var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
+                return Ok(app.DistrictUpsert(districts));
             }
             catch (Exception ex)
             {
@@ -64,7 +61,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpPost("{applicationName}/SchoolUpsert")]
-        public ActionResult<string> SchoolUpsert(string applicationName, [FromBody] School[] schools)
+        public ActionResult<string> SchoolUpsert([FromRoute] string applicationName, [FromBody] School[] schools)
         {
             try
             {
@@ -73,7 +70,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 {
                     _logger.LogInformation("Received school number = " + school.Mincode + ", name = " + school.DisplayName);
                 }
-                return Ok(D365ModelUtility.ToJSONArray(schools));
+                var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
+                return Ok(app.SchoolUpsert(schools));
             }
             catch (Exception ex)
             {

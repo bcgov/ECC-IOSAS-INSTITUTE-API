@@ -91,24 +91,24 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             var result = new JObject();
             // Direct data mapping
-            result["iosas_authorityno"] = this.AuthorityNumber;
-            result["iosas_authorityno"] = this.DisplayName;
-            result["iosas_phone"] = this.PhoneNumber;
-            result["iosas_fax"] = this.FaxNumber;
-            result["iosas_email"] = this.Email;
+            result["edu_authority_no"] = $"{this.AuthorityNumber}";
+            result["edu_name"] = this.DisplayName;
+            result["edu_phone"] = this.PhoneNumber;
+            result["edu_fax"] = this.FaxNumber;
+            result["edu_email"] = this.Email;
             result["iosas_authoritystatus"] = this.AuthorityStatus; // TODO: Need default value
-            result["iosas_authoritytype"] = this.AuthorityTypeCode;
-            result["iosas_opendate"] = this.OpenedDate;
-            result["iosas_closedate"] = this.ClosedDate;
+            result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
+            result["edu_opendate"] = "2023-04-07";//this.OpenedDate; // TODO: Fix date format 
+            result["edu_closedate"] = "2023-04-07";//this.ClosedDate;
             // Physical Address Mapping
             if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
             {
-                result["iosas_addressline1"] = address.AddressLine1;
-                result["iosas_addressline2"] = address.AddressLine2;
-                result["iosas_addresscity"] = address.City;
-                result["iosas_addresspostalcode"] = address.Postal;
-                result["iosas_addressprovince"] = address.ProvinceCode;
-                result["iosas_addresscountry"] = address.CountryCode;
+                result["edu_address_street1"] = address.AddressLine1;
+                result["edu_address_street2"] = address.AddressLine2;
+                result["edu_address_city"] = address.City;
+                result["edu_address_postalcode"] = address.Postal;
+                result["edu_address_province"] = address.ProvinceCode;
+                result["edu_address_country"] = address.CountryCode;
             }
             // Contact Mapping: Finding oldest Auth type contact
             const string AuthTypeCode = "INDAUTHREP";
@@ -123,9 +123,37 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
             return result;
         }
-    }
 
-    
+        public string UpsertQuery()
+        {
+
+            return $"edu_schoolauthorities(edu_authority_no='{this.AuthorityNumber}')";
+        }
+
+        public string GetQuery()
+        {
+            return $"edu_schoolauthorities?$filter=edu_name eq '{this.DisplayName}'";
+        }
+
+        public string IdQuery(string id)
+        {
+            return "edu_schoolauthorities({id})";
+        }
+
+        public string EntityName()
+        {
+            return "edu_schoolauthorities";
+        }
+        public string Key()
+        {
+            return "";
+        }
+        public string KeyValue()
+        {
+            return "";
+        }
+
+    }
 
 }
 

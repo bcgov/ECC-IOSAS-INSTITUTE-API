@@ -22,6 +22,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
         HttpResponseMessage SendCreateRequestAsync(HttpMethod httpMethod, string entitySetName, string body);
         HttpResponseMessage SendDeleteRequestAsync(string endPoint);
         HttpResponseMessage SendUpdateRequestAsync(string endPoint, string content);
+        public HttpResponseMessage UpsertRecord(string entitySetQuery, string body);
 
         HttpResponseMessage SendUploadFileRequestAsync(string endPoint, Stream fileContent);
         HttpResponseMessage SendMessageAsync(HttpMethod httpMethod, string messageUri);
@@ -112,6 +113,17 @@ namespace ECC.Institute.CRM.IntegrationAPI
 
             // Send the message to the WebAPI. 
             return client.SendAsync(message).Result;
+        }
+
+        public HttpResponseMessage UpsertRecord(string entitySetQuery, string body)
+        {
+            var message = new HttpRequestMessage(HttpMethod.Patch, entitySetQuery)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            message.Headers.Add("Prefer", "return=representation");
+            var httpClient = _authenticationService.GetHttpClient(Application).Result;
+            return httpClient.SendAsync(message).Result;
         }
 
         
