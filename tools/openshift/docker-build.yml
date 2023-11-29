@@ -52,7 +52,7 @@ parameters:
     required: true
   - name: SOURCE_REPOSITORY_URL
     required: true
-    value: https://github.com/bcgov/ECC-IOSAS-D365.git
+    value: https://github.com/bcgov/ECC-IOSAS-INSTITUTE-API.git
   - name: SOURCE_REPOSITORY_REF
     required: true
   - name: TAG
