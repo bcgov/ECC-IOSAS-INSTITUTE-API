@@ -13,16 +13,16 @@ USER appuser
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0-focal AS build
 WORKDIR /
-COPY ["IOSAS.Infrastructure.WebAPI/IOSAS.Infrastructure.WebAPI.csproj", "IOSAS.Infrastructure.WebAPI/"]
-RUN dotnet restore "IOSAS.Infrastructure.WebAPI/IOSAS.Infrastructure.WebAPI.csproj"
+COPY ["SchoolInfoIntegration/ECC.Institute.CRM.IntegrationAPI.csproj", "SchoolInfoIntegration/"]
+RUN dotnet restore "SchoolInfoIntegration/ECC.Institute.CRM.IntegrationAPI.csproj"
 COPY . .
-WORKDIR "/IOSAS.Infrastructure.WebAPI"
-RUN dotnet build "IOSAS.Infrastructure.WebAPI.csproj" -c Release -o /app/build
+WORKDIR "/SchoolInfoIntegration"
+RUN dotnet build "ECC.Institute.CRM.IntegrationAPI.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "IOSAS.Infrastructure.WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "ECC.Institute.CRM.IntegrationAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "IOSAS.Infrastructure.WebAPI.dll"]
+ENTRYPOINT ["dotnet", "SchoolInfoIntegration.dll"]
