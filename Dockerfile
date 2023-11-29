@@ -25,4 +25,4 @@ RUN dotnet publish "ECC.Institute.CRM.IntegrationAPI.csproj" -c Release -o /app/
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SchoolInfoIntegration.dll"]
+ENTRYPOINT ["dotnet", "ECC.Institute.CRM.IntegrationAPI.dll"]
