@@ -64,7 +64,7 @@ objects:
               readinessProbe:
                 failureThreshold: 10
                 httpGet:
-                  path: /api/Health
+                  path: /api/health-check
                   port: "${{PORT}}"
                   scheme: HTTP
                 initialDelaySeconds: 40
@@ -73,7 +73,7 @@ objects:
               livenessProbe:
                 failureThreshold: 10
                 httpGet:
-                  path: /api/health
+                  path: /api/health-check
                   port: "${{PORT}}"
                   scheme: HTTP
                 initialDelaySeconds: 10
