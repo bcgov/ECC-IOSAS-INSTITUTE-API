@@ -78,5 +78,16 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+        [HttpGet("lookup/{applicationName}/{entityName}")]
+        public ActionResult<string> LookUp([FromRoute] string applicationName, [FromRoute] string entityName)
+        {
+            try
+            {
+                return Ok("OK");
+            } catch (Exception excp)
+            {
+                return StatusCode(500, excp.Message);
+            }
+        }
     }
 }

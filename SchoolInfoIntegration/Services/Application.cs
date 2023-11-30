@@ -40,16 +40,17 @@ namespace ECC.Institute.CRM.IntegrationAPI
     {
         private readonly ID365WebAPIService _d365webapiservice;
         private readonly ILogger _logger;
-
+        private readonly LookUpService _loopupService;
         public Application(ID365WebAPIService d365webapiservice, ILogger logger)
         {
             _d365webapiservice = d365webapiservice ?? throw new ArgumentNullException(nameof(d365webapiservice));
             _logger = logger;
+            _loopupService = new LookUpService(_d365webapiservice, logger);
         }
 
         public string DistrictUpsert(SchoolDistrict[] districts)
         {
-            return this.UpdateV2(districts, D365ModelMetdaData.SchoolDistrict, new JObject());
+            return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts), new JObject());
         }
 
         public string[] AuthorityUpsert(SchoolAuthority[] authorities)
@@ -115,7 +116,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
         }
         private static string ResponseDescription(HttpResponseMessage message)
         {
-            return $"Resp: URI: [{message.RequestMessage?.RequestUri}] | Status: {message.StatusCode}, ${message.ReasonPhrase} | Content: {message.Content.ReadAsStringAsync().Result}";
+            return D365ModelUtility.ResponseDescription(message);
         }
         private string Filter(D365ModelMetdaData meta, string value)
         {
@@ -147,6 +148,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 result["errors"] = JArray.FromObject(new string[] { "No item to update " });
                 return result.ToString();
             }
+            result["lookups"] = _loopupService.FetchLookUpValues(meta);
             foreach (D365Model model in items)
             {
                 // Get existing data
@@ -156,6 +158,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 JObject status = new JObject();
                 status["key"] = model.KeyDisplay();
                 status["type"] = meta.tag;
+                
                 try
                 {
                     var existingString = Filter(meta, model.KeyValue());

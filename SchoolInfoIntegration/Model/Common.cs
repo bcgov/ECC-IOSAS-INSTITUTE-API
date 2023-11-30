@@ -19,47 +19,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string KeyDisplay();
     }
 
-    public class D365ModelMetdaData
-    {
-        public string entityName;
-        public string primaryKey;
-        public string businessKey;
-        public string tag;
-        private D365ModelMetdaData(string tag, string entity, string key, string businessKey)
-        {
-            this.tag = tag;
-            entityName = entity;
-            primaryKey = key;
-            this.businessKey = businessKey;
-        }
-        public string SelectQuery()
-        {
-            return $"{entityName}?$select={businessKey},{primaryKey}";
-        }
-        public string FilterAndSelectQuery(string value)
-        {
-            return $"{entityName}?$select={businessKey},{primaryKey}&$filter={businessKey} eq '{value.Trim()}'";
-        }
-        public string BuisnessKeyValue(JObject obj)
-        {
-            return obj.GetValue(businessKey)?.ToString() ?? "";
-        }
-        public string KeyValue(JObject obj)
-        {
-            return obj.GetValue(primaryKey)?.ToString() ?? "";
-        }
-        public string IdQuery(string id)
-        {
-            return $"{entityName}({id})";
-        }
-        public static D365ModelMetdaData SchoolDistrict { get { return new D365ModelMetdaData("school-district", "edu_schooldistricts", "edu_schooldistrictid", "edu_internalcode"); } }
-    }
-
     public class D365ModelUtility
     {
         public static JObject[] ToJSONArray(D365Model[] items)
         {
             return items.Select(item => item.ToD365EntityModel()).ToArray() ;
+        }
+        public static string ResponseDescription(HttpResponseMessage message)
+        {
+            return $"Resp: URI: [{message.RequestMessage?.RequestUri}] | Status: {message.StatusCode}, ${message.ReasonPhrase} | Content: {message.Content.ReadAsStringAsync().Result}";
         }
     }
 

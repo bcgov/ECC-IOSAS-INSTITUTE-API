@@ -27,9 +27,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
     public class MetdataController : ControllerBase
     {
         private readonly ID365WebAPIService _d365webapiservice;
-        public MetdataController(ID365WebAPIService d365webapiservice)
+        private readonly ILogger<MetdataController> _logger;
+        private string JSONResp(string input) => $"{JObject.Parse(input)}";
+        public MetdataController(ID365WebAPIService d365webapiservice, ILogger<MetdataController> logger)
         {
             _d365webapiservice = d365webapiservice ?? throw new ArgumentNullException(nameof(d365webapiservice));
+            _logger = logger;
         }
 
 
@@ -51,7 +54,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 
                 if (root.Last().First().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result);
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
@@ -78,7 +81,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 
                 if (root.Last().First().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result);
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
@@ -104,7 +107,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 System.Console.WriteLine($"Response: {root}");
                 if (root.Last().First().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result.Replace($"/", ""));
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
@@ -134,7 +137,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 
                 if (root.Last().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result);
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
@@ -165,7 +168,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 System.Console.WriteLine($"[{tableName}] Response: {root}");
                 if (root.Last().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result);
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
@@ -195,7 +198,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 System.Console.WriteLine($"[{tableName}] Response: {root}");
                 if (root.Last().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result);
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
@@ -209,7 +212,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpGet("GetFilteredData")]
-        public ActionResult<string> GetFilteredData(string applicationName, string tableName, string selectQuery, string filterQuery)
+        public ActionResult<string> GetFilteredData(string applicationName, string tableName, string columns, string keyName, string values, Boolean isNumber)
         {
             if (string.IsNullOrEmpty(tableName))
                 return BadRequest("Invalid Request - tableName is required");
@@ -217,13 +220,18 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             if (string.IsNullOrEmpty(applicationName))
                 return BadRequest("Invalid Request - tableName is required");
 
-            if (string.IsNullOrEmpty(selectQuery))
+            if (string.IsNullOrEmpty(keyName))
                 return BadRequest("Invalid Request - select is required");
 
-            if (string.IsNullOrEmpty(filterQuery))
-                return BadRequest("Invalid Request - filter is required");
+            if (string.IsNullOrEmpty(columns))
+                return BadRequest("Invalid Request - colmuns is required");
 
-            string message = string.Format($"{tableName}?$select={selectQuery}&$filter={filterQuery}");
+            if (string.IsNullOrEmpty(values))
+                return BadRequest("Invalid Request - values is required");
+            var fianlValues = values.Split(",").Select(val => $"'{val}'"); // isNumber ? $"{val}" : $"\"{val}\"")
+            string message = string.Format($"{tableName}?$select={columns}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{keyName}',PropertyValues=[{string.Join(",", fianlValues)}])");
+
+            _logger.LogInformation($"The Filter Query: {message} | Application: {applicationName}");
 
             _d365webapiservice.Application = applicationName;
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
@@ -233,7 +241,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 System.Console.WriteLine($"[{tableName}] Response: {root}");
                 if (root.Last().HasValues)
                 {
-                    return Ok(response.Content.ReadAsStringAsync().Result);
+                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
                 {
