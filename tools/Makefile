@@ -192,6 +192,11 @@ promote-api:
 	echo "+\n++ API: Deploying latest tag $(BUILD_TAG) API with ENV $(ENV_PREFIX) $\n+"
 	sh config/promote-app.sh $(BUILD_NAMESPACE) $(API) $(BUILD_TAG) $(ENV_PREFIX)
 
+# OpenShift Port Forwarding tunnel
+d365-api-tunnel: print-status
+	@echo "+\n++ Port Forwarding to D365 stack"
+	@oc -n $(NAMESPACE) port-forward svc/$(API) 5091
+
 
 # Tagging env
 tag-commit:

@@ -47,9 +47,9 @@ namespace ECC.Institute.CRM.IntegrationAPI
             _logger = logger;
         }
 
-        public string[] DistrictUpsert(SchoolDistrict[] districts)
+        public string DistrictUpsert(SchoolDistrict[] districts)
         {
-            return this.Update(districts, D365ModelMetdaData.SchoolDistrict);
+            return this.UpdateV2(districts, D365ModelMetdaData.SchoolDistrict, new JObject());
         }
 
         public string[] AuthorityUpsert(SchoolAuthority[] authorities)
@@ -78,7 +78,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             };
             foreach (D365Model model in items)
             {
-                _logger.LogInformation($"Upsert: [{tag}][Start]: {model.UpsertQuery()}");
+                _logger.LogInformation($"Upsert: [{tag}][Start]: {model.KeyDisplay()}");
                 /*var existingStringResult = this.GetData(model);
                
                 var result = JObject.Parse(existingStringResult);
@@ -92,16 +92,16 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 {
                     _logger.LogInformation($"Upsert: [{tag}]: no existing:\n {existingStringResult}");
                 }*/
-                var resp = _d365webapiservice.UpsertRecord(model.UpsertQuery(), model.ToD365EntityModel().ToString());
+                var resp = _d365webapiservice.UpsertRecord(model.KeyDisplay(), model.ToD365EntityModel().ToString());
                 if (resp.IsSuccessStatusCode)
                 {
-                    var status = $"[{tag}][Success] : {model.UpsertQuery()}";
+                    var status = $"[{tag}][Success] : {model.KeyDisplay()}";
                     _logger.LogInformation(status);
                     resultsSuccess.Add(status);
                 }
                 else
                 {
-                    var status = $"[{tag}][Fail]: {model.UpsertQuery()} | {resp.StatusCode} | {resp.Content.ReadAsStringAsync().Result}";
+                    var status = $"[{tag}][Fail]: {model.KeyDisplay()} | {resp.StatusCode} | {resp.Content.ReadAsStringAsync().Result}";
                     _logger.LogInformation(status);
                     _logger.LogInformation($"[{tag}][Fail]: URI: {resp.RequestMessage?.RequestUri}");
                     resultFailure.Add(status);
@@ -113,10 +113,106 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
             return resultsSuccess.ToArray();
         }
-        private string ResponseDescription(HttpResponseMessage message)
+        private static string ResponseDescription(HttpResponseMessage message)
         {
             return $"Resp: URI: [{message.RequestMessage?.RequestUri}] | Status: {message.StatusCode}, ${message.ReasonPhrase} | Content: {message.Content.ReadAsStringAsync().Result}";
         }
+        private string Filter(D365ModelMetdaData meta, string value)
+        {
+            var query = meta.FilterAndSelectQuery(value);
+            _logger.LogInformation($"Will Filter Data using Query: {query}");
+            var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
+            if (response.IsSuccessStatusCode)
+            {
+                return response.Content.ReadAsStringAsync().Result;
+            } else
+            {
+                var excpMessage = $"Filter | {meta.tag}({value}) | Fail | {ResponseDescription(response)}";
+                _logger.LogInformation(excpMessage);
+                throw new Exception(excpMessage);
+            }
+            
+        }
+        private string UpdateV2(D365Model[] items, D365ModelMetdaData meta, JObject lookups)
+        {
+            JObject result = new JObject();
+            result["ops"] = "updateV2";
+            result["tag"] = meta.tag;
+            var errors = new List<string>();
+            var failure = new List<string>();
+            var statuses = new List<JObject>();
+            // Case 1: No itmes
+            if (items.Length < 1)
+            {
+                result["errors"] = JArray.FromObject(new string[] { "No item to update " });
+                return result.ToString();
+            }
+            foreach (D365Model model in items)
+            {
+                // Get existing data
+                
+                JObject? existing = null;
+                string[] ids;
+                JObject status = new JObject();
+                status["key"] = model.KeyDisplay();
+                status["type"] = meta.tag;
+                try
+                {
+                    var existingString = Filter(meta, model.KeyValue());
+                    existing = JObject.Parse(existingString);
+                } catch (Exception excp)
+                {
+                    status["filter_issue"] = excp.Message;
+                }
+                if (existing != null && existing?.GetValue("value")?.ToArray() is JToken[] values && values != null && values.Length > 0)
+                {
+                    _logger.LogInformation($"UpdateV2 | {meta.tag}({model.KeyDisplay()}) | Existing value \n {values}");
+                    status["existings"] = JArray.FromObject(values);
+                    ids = values
+                        .Select(value => value[meta.primaryKey]?.ToString() ?? "")
+                        .Where(value => value != null)
+                        .ToArray();
+                    
+                } else
+                {
+                    _logger.LogInformation($"UpdateV2 |  {meta.tag}({model.KeyDisplay()}) | No existing value create");
+                    ids = new string[] { };
+                }
+
+                try
+                {
+                    string resp;
+                    if (ids.Length > 0)
+                    {
+                       
+                        status["has_duplicate"] = ids.Length > 1 ? true : false;
+                        status["action"] = "update";
+                        resp = this.UpdateAtomic(model, meta, ids);
+                    } else
+                    {
+                        status["action"] = "create";
+                        resp = this.CreateAtomic(model, meta);
+                    }
+                    status["status"] = "success";
+                } catch (Exception excp)
+                {
+                    status["status"] = "error";
+                    status["error"] = excp.Message;
+                    errors.Add(excp.Message);
+                }
+                statuses.Add(status);
+            }
+            result["errors"] = JArray.FromObject(errors.ToArray());
+            result["statuses"] = JArray.FromObject(statuses.ToArray());
+            if (errors.Count > 0)
+            {
+                throw new Exception($"{result}");
+            }
+            return $"{result}";
+        }
+
+        
+
         private string[] Update(D365Model[] items, D365ModelMetdaData meta)
         {
             var resultsSuccess = new List<string>()

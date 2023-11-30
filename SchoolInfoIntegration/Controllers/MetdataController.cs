@@ -185,7 +185,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             if (string.IsNullOrEmpty(applicationName))
                 return BadRequest("Invalid Request - tableName is required");
 
-            string message = string.Format($"{tableName}?#select={selectQuery}");
+            string message = string.Format($"{tableName}?$select={selectQuery}");
 
             _d365webapiservice.Application = applicationName;
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
@@ -206,6 +206,44 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 System.Console.WriteLine($"Response error: {response.StatusCode}, {response.ReasonPhrase} | {response.Content.ReadAsStringAsync().Result} | URI: {response.RequestMessage?.RequestUri} ");
                 return StatusCode((int)response.StatusCode,
                     $"Failed to Retrieve records: {response.ReasonPhrase}");
+        }
+
+        [HttpGet("GetFilteredData")]
+        public ActionResult<string> GetFilteredData(string applicationName, string tableName, string selectQuery, string filterQuery)
+        {
+            if (string.IsNullOrEmpty(tableName))
+                return BadRequest("Invalid Request - tableName is required");
+
+            if (string.IsNullOrEmpty(applicationName))
+                return BadRequest("Invalid Request - tableName is required");
+
+            if (string.IsNullOrEmpty(selectQuery))
+                return BadRequest("Invalid Request - select is required");
+
+            if (string.IsNullOrEmpty(filterQuery))
+                return BadRequest("Invalid Request - filter is required");
+
+            string message = string.Format($"{tableName}?$select={selectQuery}&$filter={filterQuery}");
+
+            _d365webapiservice.Application = applicationName;
+            var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
+            if (response.IsSuccessStatusCode)
+            {
+                var root = JToken.Parse(response.Content.ReadAsStringAsync().Result);
+                System.Console.WriteLine($"[{tableName}] Response: {root}");
+                if (root.Last().HasValues)
+                {
+                    return Ok(response.Content.ReadAsStringAsync().Result);
+                }
+                else
+                {
+                    return NotFound($"No Data");
+                }
+            }
+            else
+                System.Console.WriteLine($"Response error: {response.StatusCode}, {response.ReasonPhrase} | {response.Content.ReadAsStringAsync().Result} | URI: {response.RequestMessage?.RequestUri} ");
+            return StatusCode((int)response.StatusCode,
+                $"Failed to Retrieve records: {response.ReasonPhrase}");
         }
 
 

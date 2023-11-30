@@ -6,6 +6,32 @@ using System.Net;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
+    public class Principal
+    {
+        [JsonPropertyName("firstName")]
+        public string? FirstName { get; set; }
+
+        [JsonPropertyName("lastName")]
+        public string? LastName { get; set; }
+
+        [JsonPropertyName("middleName")]
+        public string? MiddleName { get; set; }
+
+        [JsonPropertyName("fullName")]
+        public string? FullName { get; set; }
+
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
+    }
+
+    public enum SchoolCategory
+    {
+        Public = 103,
+        Offsore = 102,
+        Independent = 101
+
+    }
+
     public partial class School: D365Model
     {
         [JsonPropertyName("createUser")]
@@ -26,8 +52,19 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("districtId")]
         public Guid DistrictId { get; set; }
 
+        [JsonPropertyName("schoolAuthorityNumber")]
+        public string SchoolAuthorityNumber { get; set; }
+
         [JsonPropertyName("mincode")]
         public string? Mincode { get; set; }
+
+        // TODO: Missing
+        [JsonPropertyName("certficateGrade")]
+        public string? CertficateGrade { get; set; }
+
+        // TODO: Missing
+        [JsonPropertyName("schoolStatus")]
+        public string? SchoolStatus { get; set; }
 
         [JsonPropertyName("independentAuthorityId")]
         public string? IndependentAuthorityId { get; set; }
@@ -71,43 +108,56 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("closedDate")]
         public DateTimeOffset ClosedDate { get; set; }
 
+        // TODO: Missing
+        [JsonPropertyName("addresses")]
+        public Address[]? Addresses { get; set; }
+
+        // TODO: Missing
+        [JsonPropertyName("principal")]
+        public Principal? Principal { get; set; }
+
+
+        private SchoolCategory Category()
+        {
+            switch (this.SchoolCategoryCode)
+            {
+                case "OFFSHORE":
+                    return SchoolCategory.Offsore;
+                case "PUBLIC":
+                    return SchoolCategory.Public;
+                default:
+                    return SchoolCategory.Independent;
+            }
+        }
         public JObject ToD365EntityModel()
         {
             var result = new JObject();
-            result["schoolDistrictNo"] = this.DistrictId; // TODO: Not getting Distraic Number
-            result["schoolName"] = this.DisplayName;
-            result["schoolCode"] = this.SchoolNumber;
-            result["minCode"] = this.Mincode;
-            result["authorityNumber"] = this.IndependentAuthorityId; // TODO: Not getting Authority Number
-            result["fax"] = this.FaxNumber;
-            result["email"] = this.Email;
-            result["phone"] = this.PhoneNumber;
-            result["opendate"] = this.OpenedDate;
-            result["closedate"] = this.ClosedDate;
-            result["website"] = this.Website;
-            result["facilityType"] = this.FacilityTypeCode;
-            result["schoolCategory"] = this.SchoolCategoryCode;
+            // result["edu_schooldistrict"] = this.DistrictId; // TODO: Need mapping for district > find the code write
+            result["edu_name"] = this.DisplayName;
+            result["edu_schoolcode"] = this.SchoolNumber;
+            result["edu_mincode"] = this.Mincode;
+            //result["iosas_authority"] = this.IndependentAuthorityId; // TODO: Not getting Authority Number
+            result["edu_fax"] = this.FaxNumber;
+            result["iosas_email"] = this.Email;
+            result["edu_phone"] = this.PhoneNumber;
+            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-mm-dd");
+            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-mm-dd");
+            result["edu_closedate"] = this.Website;
+            result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000: 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
+            result["edu_schoolcategory"] = (int) this.Category(); // TODOD: OFFSHORE | PUBLIC |
             result["teamOwnerId"] = $"OWNER";
             // Required fields 
-            // schoolStatus => schoolStatus
-            // schoolType => schoolGrades
-            // Principal 
-                // principal_FirstName
-                // principal_LastName
-                // principal_MiddleName
-                // principal_FullName
-                // principal_Prefix
-            // Address
+
             // Mail Address Mapping
             /*if (this.Addresses?.Length > 0)
             {
                 var address = this.Addresses[0];
-                result["edu_mailaddressline1"] = address.AddressLine1;
+                result["edu_address1_city"] = address.AddressLine1;
                 result["edu_mailaddressline2"] = address.AddressLine2;
-                result["edu_mailcity"] = address.City;
+                result["edu_address1_city"] = address.City;
                 result["edu_mailpostalcode"] = address.Postal;
                 result["edu_mailprovince"] = address.ProvinceCode;
-                result["edu_mailcountry"] = address.CountryCode;
+                result["edu_address1_country"] = address.CountryCode;
             }
             // Address Mapping
             if (this.Addresses?.Length > 1)
@@ -146,7 +196,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public string KeyValue()
         {
-            return "";
+            return this.Mincode ?? "";
+        }
+        public string KeyDisplay()
+        {
+            return $"schoolMinCode={this.Mincode}";
         }
     }
 }

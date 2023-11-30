@@ -64,6 +64,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("authorityStatus")]
+        // TODO: Missing
         public string? AuthorityStatus { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -84,8 +85,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("addresses")]
         public Address[]? Addresses { get; set; }
 
-        [JsonPropertyName("notes")]
-        public Note[]? Notes { get; set; }
 
         public JObject ToD365EntityModel()
         {
@@ -96,10 +95,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_phone"] = this.PhoneNumber;
             result["edu_fax"] = this.FaxNumber;
             result["edu_email"] = this.Email;
-            result["iosas_authoritystatus"] = this.AuthorityStatus; // TODO: Need default value
+            result["iosas_authoritystatus"] = this.AuthorityStatus; // TODO: Need default value | Missing
             result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
-            result["edu_opendate"] = "2023-04-07";//this.OpenedDate; // TODO: Fix date format 
-            result["edu_closedate"] = "2023-04-07";//this.ClosedDate;
+            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-mm-dd"); // Format: yyyy-mm-dd
+            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-mm-dd");// Format: yyyy-mm-dd 
             // Physical Address Mapping
             if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
             {
@@ -151,6 +150,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string KeyValue()
         {
             return "";
+        }
+        public string KeyDisplay()
+        {
+            return $"schoolAuthorityNo={this.AuthorityNumber}";
         }
 
     }

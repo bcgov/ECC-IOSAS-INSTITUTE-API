@@ -16,6 +16,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string EntityName();
         public string Key();
         public string KeyValue();
+        public string KeyDisplay();
     }
 
     public class D365ModelMetdaData
@@ -33,7 +34,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public string SelectQuery()
         {
-            return $"{entityName}?#select={businessKey},{primaryKey}";
+            return $"{entityName}?$select={businessKey},{primaryKey}";
+        }
+        public string FilterAndSelectQuery(string value)
+        {
+            return $"{entityName}?$select={businessKey},{primaryKey}&$filter={businessKey} eq '{value.Trim()}'";
         }
         public string BuisnessKeyValue(JObject obj)
         {
@@ -47,7 +52,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             return $"{entityName}({id})";
         }
-        public static D365ModelMetdaData SchoolDistrict { get { return new D365ModelMetdaData("school-district", "edu_schooldistricts", "edu_schooldistrictid", "edu_number"); } }
+        public static D365ModelMetdaData SchoolDistrict { get { return new D365ModelMetdaData("school-district", "edu_schooldistricts", "edu_schooldistrictid", "edu_internalcode"); } }
     }
 
     public class D365ModelUtility

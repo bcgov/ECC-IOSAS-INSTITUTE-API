@@ -65,10 +65,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         {
             try
             {
-                _logger.LogInformation("Received request to update authoroties for :" + applicationName);
+                _logger.LogInformation($"Received request to update authoroties for :" + applicationName);
                 foreach (School school in schools)
                 {
-                    _logger.LogInformation("Received school number = " + school.Mincode + ", name = " + school.DisplayName);
+                    _logger.LogInformation($"Received school number = " + school.Mincode + ", name = " + school.DisplayName);
                 }
                 var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
                 return Ok(app.SchoolUpsert(schools));

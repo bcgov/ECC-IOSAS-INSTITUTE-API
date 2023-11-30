@@ -53,17 +53,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("addresses")]
         public Address[]? Addresses { get; set; }
 
-        [JsonPropertyName("notes")]
-        public Note[]? Notes { get; set; }
-
         public JObject ToD365EntityModel()
         {
             var result = new JObject();
-            result["edu_number"] = this.KeyValue();
-            result["edu_internalcode"] = this.DistrictNumber;
+            result["edu_number"] = $"SD{this.KeyValue()}";
+            result["edu_internalcode"] = this.KeyValue();
             result["edu_name"] = this.DisplayName;
             result["edu_districtstatus"] = this.DistrictStatusCode == "ACTIVE" ? true: false; // Active : 1, Inactiave: 0
             // result["edu_region"] = this.DistrictRegionCode; // TODO: Have to find a mapping logic
+            // { "iosas_edu_Year@odata.bind", $"/edu_years({value._iosas_edu_year_value})" }
             result["edu_fax"] = this.FaxNumber;
             result["edu_email"] = this.Email;
             result["edu_website"] = this.Website;
@@ -118,7 +116,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string KeyValue()
         {
             var value = this.DistrictNumber ?? "";
-            return value.StartsWith("SD") ? value : $"SD{value}";
+            return value;
+        }
+        public string KeyDisplay()
+        {
+            return $"schoolDistrictNo={this.KeyValue()}";
         }
     }
 }
