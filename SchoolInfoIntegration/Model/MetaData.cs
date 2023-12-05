@@ -4,6 +4,73 @@ using Newtonsoft.Json.Linq;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
+
+    public class JsonMapper
+    {
+        public delegate JToken? Map(JObject source, string sourceKey, string targetKey);
+        public struct Mapper
+        {
+            public string TargetPath;
+            public Map? Transformar;
+        }
+        public static JObject MapObject(JObject source, Dictionary<string, Mapper> mappers)
+        {
+            var target = new JObject();
+            foreach(var kvo in mappers)
+            {
+                string targetKey = kvo.Key;
+                Mapper mapper = kvo.Value;
+                if (mapper.Transformar != null)
+                {
+                    try
+                    {
+                        target[targetKey] = mapper.Transformar(source, mapper.TargetPath, targetKey);
+                    }
+                    catch (Exception) { }
+                } else
+                {
+                    
+                }
+            }
+            return target;
+        }
+    }
+
+    public class D365Application : IEquatable<D365Application>
+    {
+        public readonly string name;
+        private D365Application(string name)
+        {
+            this.name = name;
+        }
+        public override bool Equals(object? obj)
+        {
+            return this.Equals(obj as D365Application);
+        }
+
+        public bool Equals(D365Application? otherApp)
+        {
+            if (otherApp is null)
+            {
+                return false;
+            }
+            return this.name == otherApp?.name;
+        }
+
+        public override int GetHashCode()
+        {
+            return name.GetHashCode();
+        }
+        public static bool operator ==(D365Application app1, D365Application app2)
+        {
+            return app1.Equals(app2);
+        }
+        public static bool operator !=(D365Application lhs, D365Application rhs) => !(lhs == rhs);
+
+        // Public part
+        public static D365Application IOSAS { get { return new D365Application("iosas"); } }
+        public static D365Application ISFS { get { return new D365Application("isfs"); } }
+    }
     
     public class D365ModelMetdaData
     {
@@ -13,7 +80,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string tag;
         public List<D365ModelMetdaData> lookupsMetaData = new ();
         public JObject lookUps = new ();
-        public D365ModelMetdaData(string tag, string entity, string key, string businessKey)
+        protected D365ModelMetdaData(string tag, string entity, string key, string businessKey)
         {
             this.tag = tag;
             entityName = entity;
@@ -57,7 +124,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         { 
 
         }
-        
+        public virtual JObject? TransformToD365(D365Application application, T model) { throw NotImplementedException(); }
+
+        private Exception NotImplementedException()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     class EduRegion: D365ModelMetdaData
@@ -95,6 +167,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 default:
                     return null;
             }
+        }
+        public override JObject? TransformToD365(D365Application application, SchoolDistrict model)
+        {
+
+            return null;
         }
     }
 }

@@ -34,12 +34,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     public partial class School: D365Model
     {
-        [JsonPropertyName("createUser")]
-        public string? CreateUser { get; set; }
-
-        [JsonPropertyName("updateUser")]
-        public string? UpdateUser { get; set; }
-
         [JsonPropertyName("createDate")]
         public DateTimeOffset CreateDate { get; set; }
 
@@ -49,8 +43,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("schoolId")]
         public Guid SchoolId { get; set; }
 
-        [JsonPropertyName("districtId")]
-        public Guid DistrictId { get; set; }
+        [JsonPropertyName("districtNumber")]
+        public Guid DistrictNumber { get; set; }
 
         [JsonPropertyName("schoolAuthorityNumber")]
         public string SchoolAuthorityNumber { get; set; }
@@ -61,6 +55,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         // TODO: Missing
         [JsonPropertyName("certficateGrade")]
         public string? CertficateGrade { get; set; }
+
+        // TODO: Missing
+        [JsonPropertyName("schoolGrades")]
+        public string? SchoolGrades { get; set; }
 
         // TODO: Missing
         [JsonPropertyName("schoolStatus")]
@@ -102,11 +100,21 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("facilityTypeCode")]
         public string? FacilityTypeCode { get; set; }
 
+        [JsonPropertyName("facilityTypeNumber")]
+        public string? FacilityTypeNumber { get; set; }
+
         [JsonPropertyName("openedDate")]
         public DateTimeOffset OpenedDate { get; set; }
 
         [JsonPropertyName("closedDate")]
         public DateTimeOffset ClosedDate { get; set; }
+
+        [JsonPropertyName("schoolFundingGroup")]
+        public string? SchoolFundingGroupName { get; set; }
+
+        // teamOwnerId
+        [JsonPropertyName("schoolTeamOwnerId")]
+        public string? SchoolTeamOwnerId { get; set; }
 
         // TODO: Missing
         [JsonPropertyName("addresses")]
@@ -145,7 +153,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_closedate"] = this.Website;
             result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000: 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
             result["edu_schoolcategory"] = (int) this.Category(); // TODOD: OFFSHORE | PUBLIC |
-            result["teamOwnerId"] = $"OWNER";
             // Required fields 
 
             // Mail Address Mapping

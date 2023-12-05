@@ -80,19 +80,6 @@ namespace ECC.Institute.CRM.IntegrationAPI
             foreach (D365Model model in items)
             {
                 _logger.LogInformation($"Upsert: [{tag}][Start]: {model.KeyDisplay()}");
-                /*var existingStringResult = this.GetData(model);
-               
-                var result = JObject.Parse(existingStringResult);
-                HttpResponseMessage resp;
-                if (result != null)
-                {
-                    _logger.LogInformation($"Upsert: [{tag}]: existing:\n {existingStringResult}");
-                    JToken[]? value = result.GetValue("value").ToArray();
-                    resp = _d365webapiservice.SendCreateRequestAsync(model.IdQuery());
-                } else
-                {
-                    _logger.LogInformation($"Upsert: [{tag}]: no existing:\n {existingStringResult}");
-                }*/
                 var resp = _d365webapiservice.UpsertRecord(model.KeyDisplay(), model.ToD365EntityModel().ToString());
                 if (resp.IsSuccessStatusCode)
                 {
