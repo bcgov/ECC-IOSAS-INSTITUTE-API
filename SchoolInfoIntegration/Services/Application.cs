@@ -50,48 +50,48 @@ namespace ECC.Institute.CRM.IntegrationAPI
 
         public string DistrictUpsert(SchoolDistrict[] districts)
         {
-            return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts), new JObject());
+            return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts));
         }
 
-        public string[] AuthorityUpsert(SchoolAuthority[] authorities)
+        public string AuthorityUpsert(SchoolAuthority[] authorities)
         {
-            return this.Upsert(authorities, "school-athority");
+            return this.UpdateV2(authorities, SchoolAuthorityIOSAS.Create(authorities));
         }
 
         public string[] SchoolUpsert(School[] schools)
         {
-            return this.Upsert(schools, "school");
+            return this.Upsert(schools, SchoolIOSAS.Create(schools));
         }
         public string GetData(D365Model model)
         {
             return _d365webapiservice.SendRetrieveRequestAsync(model.GetQuery(), true).Content.ReadAsStringAsync().Result;
         }
 
-        private string[] Upsert(D365Model[] items, string tag)
+        private string[] Upsert(D365Model[] items, D365ModelMetdaData meta)
         {
             var resultsSuccess = new List<string>()
             {
-                 $"Upsert | D365 | {tag} | Following itmes are upserted"
+                 $"Upsert | D365 | {meta.tag} | Following itmes are upserted"
             };
             var resultFailure = new List<string>
             {
-                $"Upsert | D365 | {tag} | Error: Received follwing errors"
+                $"Upsert | D365 | {meta.tag} | Error: Received follwing errors"
             };
             foreach (D365Model model in items)
             {
-                _logger.LogInformation($"Upsert: [{tag}][Start]: {model.KeyDisplay()}");
-                var resp = _d365webapiservice.UpsertRecord(model.KeyDisplay(), model.ToD365EntityModel().ToString());
+                _logger.LogInformation($"Upsert: [{meta.tag}][Start]: {model.KeyDisplay()}");
+                var resp = _d365webapiservice.UpsertRecord(model.KeyDisplay(), meta.GetD365DataModel(model).ToString());
                 if (resp.IsSuccessStatusCode)
                 {
-                    var status = $"[{tag}][Success] : {model.KeyDisplay()}";
+                    var status = $"[{meta.tag}][Success] : {model.KeyDisplay()}";
                     _logger.LogInformation(status);
                     resultsSuccess.Add(status);
                 }
                 else
                 {
-                    var status = $"[{tag}][Fail]: {model.KeyDisplay()} | {resp.StatusCode} | {resp.Content.ReadAsStringAsync().Result}";
+                    var status = $"[{meta.tag}][Fail]: {model.KeyDisplay()} | {resp.StatusCode} | {resp.Content.ReadAsStringAsync().Result}";
                     _logger.LogInformation(status);
-                    _logger.LogInformation($"[{tag}][Fail]: URI: {resp.RequestMessage?.RequestUri}");
+                    _logger.LogInformation($"[{meta.tag}][Fail]: URI: {resp.RequestMessage?.RequestUri}");
                     resultFailure.Add(status);
                 }
             }
@@ -121,7 +121,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
             
         }
-        private string UpdateV2(D365Model[] items, D365ModelMetdaData meta, JObject lookups)
+        private string UpdateV2(D365Model[] items, D365ModelMetdaData meta)
         {
             JObject result = new JObject();
             result["ops"] = "updateV2";
@@ -135,7 +135,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 result["errors"] = JArray.FromObject(new string[] { "No item to update " });
                 return result.ToString();
             }
-            result["lookups"] = _loopupService.FetchLookUpValues(meta);
+            var lookUps = _loopupService.FetchLookUpValues(meta);
+            result["lookups-errors"] = lookUps["errors"];
             foreach (D365Model model in items)
             {
                 // Get existing data
@@ -145,7 +146,6 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 JObject status = new JObject();
                 status["key"] = model.KeyDisplay();
                 status["type"] = meta.tag;
-                
                 try
                 {
                     var existingString = Filter(meta, model.KeyValue());
@@ -297,10 +297,12 @@ namespace ECC.Institute.CRM.IntegrationAPI
             {
                 $"UpdateAtomic | D365 | {meta.tag} | Error: Received follwing errors: {existings}"
             };
-            
+            var body = meta.GetD365DataModel(model).ToString();
+            _logger.LogInformation($"UpdateAtomic | D365 | {meta.tag} | Request {body}");
             foreach (string id in existings)
             {
-                var resp = _d365webapiservice.SendUpdateRequestAsync(meta.IdQuery(id), model.ToD365EntityModel().ToString());
+                
+                var resp = _d365webapiservice.SendUpdateRequestAsync(meta.IdQuery(id), body);
                 var marker = $"UpdateAtomic | {meta.tag} | [{id}/ {model.KeyValue()}]";
                 if (resp.IsSuccessStatusCode)
                 {
@@ -321,8 +323,9 @@ namespace ECC.Institute.CRM.IntegrationAPI
         }
         private string CreateAtomic(D365Model model, D365ModelMetdaData meta)
         {
-            var marker = $"Update | {meta.tag} | [{model.KeyValue()}]";
-            var resp = _d365webapiservice.SendCreateRequestAsync($"{meta.entityName}", model.ToD365EntityModel().ToString());
+            var body = meta.GetD365DataModel(model).ToString();
+            var marker = $"CreateAtomic | {meta.tag} | [{model.KeyValue()}] | body: {body}";
+            var resp = _d365webapiservice.SendCreateRequestAsync($"{meta.entityName}", body);
             if (resp.IsSuccessStatusCode)
             {
                 _logger.LogInformation($"{marker} | Success | {ResponseDescription(resp)}");

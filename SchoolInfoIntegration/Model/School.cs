@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using System.ComponentModel.DataAnnotations;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
@@ -112,9 +113,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("schoolFundingGroup")]
         public string? SchoolFundingGroupName { get; set; }
 
-        // teamOwnerId
-        [JsonPropertyName("schoolTeamOwnerId")]
-        public string? SchoolTeamOwnerId { get; set; }
+
+        [JsonPropertyName("schoolFundingGroup")]
+        public string? SchoolFundingCode { get; set; }
+       
+        [JsonPropertyName("schoolTeamOwnerOperatorNumber")]
+        [Required]
+        public string? SchoolTeamOwnerOperatorNumber { get; set; }
 
         // TODO: Missing
         [JsonPropertyName("addresses")]
@@ -137,7 +142,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                     return SchoolCategory.Independent;
             }
         }
-        public JObject ToD365EntityModel()
+
+        public JObject ToIOSAS(JObject lookups)
         {
             var result = new JObject();
             // result["edu_schooldistrict"] = this.DistrictId; // TODO: Need mapping for district > find the code write
@@ -151,33 +157,37 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_opendate"] = this.OpenedDate.ToString("yyyy-mm-dd");
             result["edu_closedate"] = this.ClosedDate.ToString("yyyy-mm-dd");
             result["edu_closedate"] = this.Website;
-            result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000: 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
-            result["edu_schoolcategory"] = (int) this.Category(); // TODOD: OFFSHORE | PUBLIC |
+            result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000 : 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
+            result["edu_schoolcategory"] = (int)this.Category(); // TODOD: OFFSHORE | PUBLIC |
             // Required fields 
 
             // Mail Address Mapping
-            /*if (this.Addresses?.Length > 0)
+            if (this.Addresses?.Length > 0)
             {
                 var address = this.Addresses[0];
-                result["edu_address1_city"] = address.AddressLine1;
-                result["edu_mailaddressline2"] = address.AddressLine2;
+                result["edu_address1_addressline1"] = address.AddressLine1;
+                result["edu_address1_addressline2"] = address.AddressLine2;
                 result["edu_address1_city"] = address.City;
-                result["edu_mailpostalcode"] = address.Postal;
-                result["edu_mailprovince"] = address.ProvinceCode;
+                result["edu_address1_postalcode"] = address.Postal;
+                result["edu_address1_province"] = address.ProvinceCode;
                 result["edu_address1_country"] = address.CountryCode;
             }
             // Address Mapping
             if (this.Addresses?.Length > 1)
             {
                 var address = this.Addresses[1];
-                result["edu_addressline1"] = address.AddressLine1;
-                result["edu_ddressline2"] = address.AddressLine2;
-                result["edu_city"] = address.City;
-                result["edu_postalcode"] = address.Postal;
-                result["edu_province"] = address.ProvinceCode;
-                result["edu_country"] = address.CountryCode;
-            }*/
+                result["edu_address2_addressline1"] = address.AddressLine1;
+                result["edu_address2_addressline2"] = address.AddressLine2;
+                result["edu_address2_city"] = address.City;
+                result["edu_address2_postalcode"] = address.Postal;
+                result["eedu_address2_province"] = address.ProvinceCode;
+                result["eedu_address2_country"] = address.CountryCode;
+            }
             return result;
+        }
+        public JObject ToISFS(JObject lookups)
+        {
+            return new JObject();
         }
 
         public string UpsertQuery()

@@ -9,7 +9,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
     public interface D365Model
     {
-        public JObject ToD365EntityModel();
+        public JObject ToIOSAS(JObject lookups);
+        public JObject ToISFS(JObject lookups);
         public string UpsertQuery();
         public string GetQuery();
         public string IdQuery(string id);
@@ -21,10 +22,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     public class D365ModelUtility
     {
-        public static JObject[] ToJSONArray(D365Model[] items)
+        /*public static JObject[] ToJSONArray(D365Model[] items)
         {
             return items.Select(item => item.ToD365EntityModel()).ToArray() ;
-        }
+        }*/
         public static string ResponseDescription(HttpResponseMessage message)
         {
             return $"Resp: URI: [{message.RequestMessage?.RequestUri}] | Status: {message.StatusCode}, ${message.ReasonPhrase} | Content: {message.Content.ReadAsStringAsync().Result}";

@@ -70,13 +70,26 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         // Public part
         public static D365Application IOSAS { get { return new D365Application("iosas"); } }
         public static D365Application ISFS { get { return new D365Application("isfs"); } }
+        public static D365Application getApplication(string applicationName)
+        {
+            if (applicationName.ToLower() == "isfs")
+            {
+                return D365Application.ISFS;
+            } else
+            {
+                return D365Application.IOSAS;
+            }
+        }
     }
+
+
     
     public class D365ModelMetdaData
     {
         public string entityName;
         public string primaryKey;
         public string businessKey;
+        public string createDateColumn;
         public string tag;
         public List<D365ModelMetdaData> lookupsMetaData = new ();
         public JObject lookUps = new ();
@@ -86,6 +99,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             entityName = entity;
             primaryKey = key;
             this.businessKey = businessKey;
+            createDateColumn = "createDateColumn";
         }
         public string SelectQuery()
         {
@@ -113,6 +127,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             return $"{entityName}({id})";
         }
         public virtual string[]? LookupValuesFor(D365ModelMetdaData lookup) { return null; }
+        public virtual JObject GetD365DataModel(D365Model model)
+        {
+            return new JObject();
+        }
     }
 
 
@@ -130,11 +148,77 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             throw new NotImplementedException();
         }
+
     }
 
     class EduRegion: D365ModelMetdaData
     {
         public EduRegion(): base("edu_region", "edu_regions", "edu_regionid", "edu_regionnumber") { }
+    }
+    class IOSASOwnerOperator: D365ModelMetdaData
+    {
+        public IOSASOwnerOperator() : base("iosas_owner_operator", "iosas_owneroperators", "iosas_owneroperatorid", "iosas_owneroperatornumber") { }
+    }
+    class IOSASFundingGroup: D365ModelMetdaData
+    {
+        public IOSASFundingGroup(): base("iosas_fundinggroup", "iosas_fundinggroups", "iosas_fundinggroupid", "iosas_name") { }
+    }
+
+    class IOSASSchoolGroup : D365ModelMetdaData
+    {
+        public IOSASSchoolGroup() : base("iosas-school-group", "iosas_inspectionfundinggroups", "iosas_inspectionfundinggroupid", "iosas_name") { }
+    }
+
+
+    class SchoolAuthorityIOSAS: ModeledMetaData<SchoolAuthority>
+    {
+        public SchoolAuthorityIOSAS() : base("school-authority", "edu_schoolauthorities", "edu_schoolauthorityid", "edu_authority_no")
+        {
+
+        }
+
+        public static SchoolAuthorityIOSAS Create(SchoolAuthority[] input)
+        {
+            SchoolAuthorityIOSAS obj = new()
+            {
+                values = input
+            };
+
+            return obj;
+        }
+
+        public override JObject GetD365DataModel(D365Model model)
+        {
+            return model.ToIOSAS(this.lookUps);
+        }
+    }
+
+    class SchoolIOSAS: ModeledMetaData<School>
+    {
+        public SchoolIOSAS() : base("school", "edu_schools", "edu_schoolid", "edu_mincode")
+        {
+            // Adding lookups
+            // Authority
+            lookupsMetaData.Add(new SchoolAuthorityIOSAS());
+            lookupsMetaData.Add(new SchoolDistrictIOSAS());
+            lookupsMetaData.Add(new IOSASOwnerOperator());
+            lookupsMetaData.Add(new IOSASFundingGroup());
+        }
+
+        public static SchoolIOSAS Create(School[] input)
+        {
+            SchoolIOSAS obj = new()
+            {
+                values = input
+            };
+
+            return obj;
+        }
+
+        public override JObject GetD365DataModel(D365Model model)
+        {
+            return model.ToIOSAS(this.lookUps);
+        }
     }
 
     class SchoolDistrictIOSAS : ModeledMetaData<SchoolDistrict>
@@ -168,11 +252,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                     return null;
             }
         }
-        public override JObject? TransformToD365(D365Application application, SchoolDistrict model)
+        
+        public override JObject GetD365DataModel(D365Model model)
         {
-
-            return null;
+            return model.ToIOSAS(this.lookUps);
         }
+
+    
     }
 }
 

@@ -20,7 +20,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
 			JObject errors = new();
 			foreach(D365ModelMetdaData lookup in meta.lookupsMetaData)
 			{
-				string[]? values = meta.LookupValuesFor(lookup);
+				string[]? values = meta.LookupValuesFor(lookup)?.ToList().Distinct().ToArray();
 				if (values?.Length > 0)
 				{
 					try
@@ -58,6 +58,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 }
 			}
 			result["errors"] = errors;
+			meta.lookUps = result;
 			return result;
 		}
 

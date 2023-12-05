@@ -15,21 +15,16 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("createUser")]
         public string? CreateUser { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("updateUser")]
         public string? UpdateUser { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("createDate")]
         public DateTimeOffset? CreateDate { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("updateDate")]
         public DateTimeOffset? UpdateDate { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("independentAuthorityId")]
-        [Required]
         public Guid? IndependentAuthorityId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -37,91 +32,44 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [Required]
         public long? AuthorityNumber { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("faxNumber")]
         [Required]
         public string? FaxNumber { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("phoneNumber")]
         [Required]
         public string? PhoneNumber { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("email")]
         [Required]
         public string? Email { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("displayName")]
         [Required]
         public string? DisplayName { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("authorityTypeCode")]
         [Required]
         public string? AuthorityTypeCode { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("authorityStatus")]
         // TODO: Missing
         public string? AuthorityStatus { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("openedDate")]
         [Required]
         public DateTimeOffset OpenedDate { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("closedDate")]
         [Required]
         public DateTimeOffset ClosedDate { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("contacts")]
         public Contact[]? Contacts { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("addresses")]
         public Address[]? Addresses { get; set; }
 
-
-        public JObject ToD365EntityModel()
-        {
-            var result = new JObject();
-            // Direct data mapping
-            result["edu_authority_no"] = $"{this.AuthorityNumber}";
-            result["edu_name"] = this.DisplayName;
-            result["edu_phone"] = this.PhoneNumber;
-            result["edu_fax"] = this.FaxNumber;
-            result["edu_email"] = this.Email;
-            result["iosas_authoritystatus"] = this.AuthorityStatus; // TODO: Need default value | Missing
-            result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
-            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-mm-dd"); // Format: yyyy-mm-dd
-            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-mm-dd");// Format: yyyy-mm-dd 
-            // Physical Address Mapping
-            if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
-            {
-                result["edu_address_street1"] = address.AddressLine1;
-                result["edu_address_street2"] = address.AddressLine2;
-                result["edu_address_city"] = address.City;
-                result["edu_address_postalcode"] = address.Postal;
-                result["edu_address_province"] = address.ProvinceCode;
-                result["edu_address_country"] = address.CountryCode;
-            }
-            // Contact Mapping: Finding oldest Auth type contact
-            const string AuthTypeCode = "INDAUTHREP";
-            var authContacts = this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode).ToArray();
-            var sortedAuthContacts = authContacts?.OrderBy((contact) => contact.CreateDate).ToArray();
-            if (sortedAuthContacts?.Length > 0)
-            {
-                var contact = sortedAuthContacts[0];
-                result["iosas_firstname"] = contact.FirstName;
-                result["iosas_lastname"] = contact.LastName;
-                result["iosas_maincontact"] = contact.Email;
-            }
-            return result;
-        }
 
         public string UpsertQuery()
         {
@@ -149,11 +97,60 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public string KeyValue()
         {
-            return "";
+            return $"{this.AuthorityNumber}";
         }
         public string KeyDisplay()
         {
-            return $"schoolAuthorityNo={this.AuthorityNumber}";
+            return $"ed_schoolAuthorityNo={this.AuthorityNumber}";
+        }
+
+        public JObject ToIOSAS(JObject lookups)
+        {
+            var result = new JObject();
+            // Direct data mapping
+            result["edu_authority_no"] = $"{this.AuthorityNumber}";
+            result["edu_name"] = this.DisplayName;
+            result["edu_phone"] = this.PhoneNumber;
+            result["edu_fax"] = this.FaxNumber;
+            result["edu_email"] = this.Email;
+            result["iosas_authoritystatus"] = AuthorityStatus == "OPEN" ? true: false ; // TODO: Need default value | Missing
+            result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
+            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd"); // Format: yyyy-mm-dd
+            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-MM-dd");// Format: yyyy-mm-dd 
+            // Physical Address Mapping
+            if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
+            {
+                result["edu_address_street1"] = address.AddressLine1;
+                result["edu_address_street2"] = address.AddressLine2;
+                result["edu_address_city"] = address.City;
+                result["edu_address_postalcode"] = address.Postal;
+                result["edu_address_province"] = address.ProvinceCode;
+                result["edu_address_country"] = address.CountryCode;
+            } else if (Address.getAddressWithType(AddressType.Mailing.Value, this.Addresses) is var mailing && mailing != null)
+            {
+                result["edu_address_street1"] = mailing.AddressLine1;
+                result["edu_address_street2"] = mailing.AddressLine2;
+                result["edu_address_city"] = mailing.City;
+                result["edu_address_postalcode"] = mailing.Postal;
+                result["edu_address_province"] = mailing.ProvinceCode;
+                result["edu_address_country"] = mailing.CountryCode;
+            }
+                // Contact Mapping: Finding oldest Auth type contact
+                const string AuthTypeCode = "INDAUTHREP";
+            var authContacts = this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode).ToArray();
+            var sortedAuthContacts = authContacts?.OrderBy((contact) => contact.CreateDate).ToArray();
+            if (sortedAuthContacts?.Length > 0)
+            {
+                var contact = sortedAuthContacts[0];
+                result["iosas_firstname"] = contact.FirstName;
+                result["iosas_lastname"] = contact.LastName;
+                result["iosas_maincontact"] = contact.Email;
+            }
+            return result;
+        }
+        public JObject ToISFS(JObject lookups)
+        {
+            return new JObject();
         }
 
     }

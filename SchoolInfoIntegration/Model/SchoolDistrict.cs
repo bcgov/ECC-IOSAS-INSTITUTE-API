@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using System.ComponentModel.DataAnnotations;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
@@ -53,13 +54,14 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("addresses")]
         public Address[]? Addresses { get; set; }
 
-        public JObject ToD365EntityModel()
+
+        public JObject ToIOSAS(JObject lookups)
         {
             var result = new JObject();
             result["edu_number"] = $"SD{this.KeyValue()}";
             result["edu_internalcode"] = this.KeyValue();
             result["edu_name"] = this.DisplayName;
-            result["edu_districtstatus"] = this.DistrictStatusCode == "ACTIVE" ? true: false; // Active : 1, Inactiave: 0
+            result["edu_districtstatus"] = this.DistrictStatusCode == "ACTIVE" ? true : false; // Active : 1, Inactiave: 0
             // result["edu_region"] = this.DistrictRegionCode; // TODO: Have to find a mapping logic
             // { "iosas_edu_Year@odata.bind", $"/edu_years({value._iosas_edu_year_value})" }
             result["edu_fax"] = this.FaxNumber;
@@ -88,7 +90,26 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["edu_province"] = address.ProvinceCode;
                 result["edu_country"] = address.CountryCode;
             }
+            // Edu region: Lookup
+            JObject[]? regions = lookups.GetValue("edu_regions")?
+                .ToArray()
+                .Select(token => (JObject)token)
+                .ToArray();
+            if (regions != null && regions.Length > 0 &&
+                Array.Find(regions, (region) => region.GetValue("edu_regionnumber")?.ToString() == this.DistrictRegionCode) is var selectedRegion &&
+                selectedRegion != null &&
+                selectedRegion.GetValue("edu_regionid")?.ToString() is var regionId &&
+                regionId != null
+                )
+            {
+                result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
+
+            }
             return result;
+        }
+        public JObject ToISFS(JObject lookups)
+        {
+            return new JObject();
         }
 
         public string UpsertQuery()
