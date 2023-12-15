@@ -179,7 +179,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     {
         public IOSASOwnerOperator() : base("iosas_owner_operator", "iosas_owneroperators", "iosas_owneroperatorid", "iosas_owneroperatornumber") { }
 
-        
+        override public string CustomSelectQuery()
+        {
+            return $"{entityName}?$select=iosas_name,iosas_owneroperatorid,iosas_owneroperatornumber&$filter=iosas_owneroperatornumber ne null";
+        }
 
     }
     class IOSASFundingGroup: D365ModelMetdaData
@@ -195,6 +198,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             return $"{entityName}?$select={SelectStatement()}&$filter=iosas_facilitycode ne null and iosas_schoolfundingcode ne null";
         }
     }
+    class IOSASTeam: D365ModelMetdaData
+    {
+        public IOSASTeam() : base("team", "teams", "teamid", "name") { }
+
+        override public string CustomSelectQuery()
+        {
+            return $"{entityName}?$select=teamid,teamtype,name,membershiptype,description&$filter=teamtype eq 0 and (name eq 'Independent Schools Branch' or name eq 'Offshore School Program')&$orderby=name";
+        }
+    }
 
     class IOSASSchoolGroup : D365ModelMetdaData
     {
@@ -204,7 +216,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     class SchoolAuthorityIOSAS: ModeledMetaData<SchoolAuthority>
     {
-        public SchoolAuthorityIOSAS() : base("school-authority", "edu_schoolauthorities", "edu_schoolauthorityid", "edu_authority_no")
+        public SchoolAuthorityIOSAS() : base("edu_schoolauthority", "edu_schoolauthorities", "edu_schoolauthorityid", "edu_authority_no")
         {
 
         }
@@ -227,7 +239,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     class SchoolIOSAS: ModeledMetaData<School>
     {
-        public SchoolIOSAS() : base("school", "edu_schools", "edu_schoolid", "edu_mincode")
+        public SchoolIOSAS() : base("edu_school", "edu_schools", "edu_schoolid", "edu_mincode")
         {
             // Adding lookups
             // Authority
@@ -255,7 +267,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     class SchoolDistrictIOSAS : ModeledMetaData<SchoolDistrict>
     {
-        public SchoolDistrictIOSAS(): base("school-district", "edu_schooldistricts", "edu_schooldistrictid", "edu_internalcode")
+        public SchoolDistrictIOSAS(): base("edu_schooldistrict", "edu_schooldistricts", "edu_schooldistrictid", "edu_internalcode")
         {
             // Adding lookups
             lookupsMetaData.Add(new EduRegion());

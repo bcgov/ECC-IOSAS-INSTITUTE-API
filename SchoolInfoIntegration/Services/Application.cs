@@ -74,7 +74,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
             {
                 new IOSASFundingGroup(),
                 new IOSASInspcetionFundingGroup(),
-                new IOSASOwnerOperator()
+                new IOSASOwnerOperator(),
+                new IOSASTeam()
             };
             JObject result = _loopupService.FetchLookUpData(relations.ToArray());
             return result;
