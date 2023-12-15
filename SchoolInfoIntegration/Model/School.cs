@@ -33,6 +33,14 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     }
 
+    public enum SchoolFacilityCode
+    {
+        Standard = 757500000, // 757500000
+        Online = 757500008,
+        Standalone = 757500009,
+        Host = 757500010
+    }
+
     public partial class School: D365Model
     {
         [JsonPropertyName("createDate")]
@@ -45,7 +53,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public Guid SchoolId { get; set; }
 
         [JsonPropertyName("districtNumber")]
-        public Guid DistrictNumber { get; set; }
+        public string DistrictNumber { get; set; }
 
         [JsonPropertyName("schoolAuthorityNumber")]
         public string SchoolAuthorityNumber { get; set; }
@@ -111,14 +119,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public DateTimeOffset ClosedDate { get; set; }
 
         [JsonPropertyName("schoolFundingGroup")]
-        public string? SchoolFundingGroupName { get; set; }
+        public string? SchoolFundingGroup { get; set; }
 
 
-        [JsonPropertyName("schoolFundingGroup")]
+        [JsonPropertyName("schoolFundingGroupCode")]
         public string? SchoolFundingCode { get; set; }
        
         [JsonPropertyName("schoolTeamOwnerOperatorNumber")]
-        [Required]
         public string? SchoolTeamOwnerOperatorNumber { get; set; }
 
         // TODO: Missing
@@ -137,9 +144,24 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 case "OFFSHORE":
                     return SchoolCategory.Offsore;
                 case "PUBLIC":
-                    return SchoolCategory.Public;
+                    return SchoolCategory.Offsore;
                 default:
                     return SchoolCategory.Independent;
+            }
+        }
+
+        private SchoolFacilityCode Facility()
+        {
+            switch (this.FacilityTypeCode)
+            {
+                case "ONLINE":
+                    return SchoolFacilityCode.Online;
+                case "STANDALONE":
+                    return SchoolFacilityCode.Standalone;
+                case "HOST":
+                    return SchoolFacilityCode.Host;
+                default:
+                    return SchoolFacilityCode.Standalone;
             }
         }
 
@@ -154,19 +176,20 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_fax"] = this.FaxNumber;
             result["iosas_email"] = this.Email;
             result["edu_phone"] = this.PhoneNumber;
-            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-mm-dd");
-            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-mm-dd");
-            result["edu_closedate"] = this.Website;
+            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd");
+            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-MM-dd");
+            result["edu_website"] = this.Website;
             result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000 : 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
             result["edu_schoolcategory"] = (int)this.Category(); // TODOD: OFFSHORE | PUBLIC |
+            result["iosas_facilitytypeoffshore"] = (int)this.Facility();
             // Required fields 
 
             // Mail Address Mapping
             if (this.Addresses?.Length > 0)
             {
                 var address = this.Addresses[0];
-                result["edu_address1_addressline1"] = address.AddressLine1;
-                result["edu_address1_addressline2"] = address.AddressLine2;
+                result["edu_address1_line1"] = address.AddressLine1;
+                result["edu_address1_line2"] = address.AddressLine2;
                 result["edu_address1_city"] = address.City;
                 result["edu_address1_postalcode"] = address.Postal;
                 result["edu_address1_province"] = address.ProvinceCode;
@@ -176,13 +199,21 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             if (this.Addresses?.Length > 1)
             {
                 var address = this.Addresses[1];
-                result["edu_address2_addressline1"] = address.AddressLine1;
-                result["edu_address2_addressline2"] = address.AddressLine2;
+                result["edu_address2_line1"] = address.AddressLine1;
+                result["edu_address2_line2"] = address.AddressLine2;
                 result["edu_address2_city"] = address.City;
                 result["edu_address2_postalcode"] = address.Postal;
-                result["eedu_address2_province"] = address.ProvinceCode;
-                result["eedu_address2_country"] = address.CountryCode;
+                result["edu_address2_province"] = address.ProvinceCode;
+                result["edu_address2_country"] = address.CountryCode;
             }
+            // Handling Lookups
+            // (School group)  => iosas_inspectionfundinggroup.iosas_facilitycode == 8
+            // Funding Group => iosas_fundinggroups.iosas_name == concat("Group " + data.SchoolFundingGroup)
+            // Owner filter owners iosas_owneroperators.teamtype == 0 and
+            // (iosas_owneroperators.name [In Independent Schools Branch, Offshore School Program] => iosas_owneroperators. */
+            // select operator for iosas_owneroperators.iosas_owneroperatorid == data.AuthorityNumber for Offsore school
+
+
             return result;
         }
         public JObject ToISFS(JObject lookups)

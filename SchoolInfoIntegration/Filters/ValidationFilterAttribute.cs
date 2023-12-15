@@ -14,7 +14,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Filters
             } else if (context.ActionArguments.ContainsKey("applicationName"))
             {
                 var applicationName = context.ActionArguments["applicationName"];
-                string[] validValues = { "iosas", "isf" };
+                string[] validValues = { "iosas", "isfs" };
                 if (!validValues.Contains(applicationName))
                 {
                     context.Result = new UnprocessableEntityObjectResult("The application name should be iosas or isf");

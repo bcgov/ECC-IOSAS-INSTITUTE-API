@@ -50,21 +50,34 @@ namespace ECC.Institute.CRM.IntegrationAPI
 
         public string DistrictUpsert(SchoolDistrict[] districts)
         {
-            return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts));
+            return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts), new JObject());
         }
 
         public string AuthorityUpsert(SchoolAuthority[] authorities)
         {
-            return this.UpdateV2(authorities, SchoolAuthorityIOSAS.Create(authorities));
+            return this.UpdateV2(authorities, SchoolAuthorityIOSAS.Create(authorities), new JObject());
         }
 
-        public string[] SchoolUpsert(School[] schools)
+        public string SchoolUpsert(School[] schools)
         {
-            return this.Upsert(schools, SchoolIOSAS.Create(schools));
+            SchoolIOSAS meta = SchoolIOSAS.Create(schools);
+            return this.UpdateV2(schools, meta, SchoolLookupForIOSAS(meta));
         }
         public string GetData(D365Model model)
         {
             return _d365webapiservice.SendRetrieveRequestAsync(model.GetQuery(), true).Content.ReadAsStringAsync().Result;
+        }
+
+        private JObject SchoolLookupForIOSAS(SchoolIOSAS meta)
+        {
+            var relations = new List<D365ModelMetdaData>
+            {
+                new IOSASFundingGroup(),
+                new IOSASInspcetionFundingGroup(),
+                new IOSASOwnerOperator()
+            };
+            JObject result = _loopupService.FetchLookUpData(relations.ToArray());
+            return result;
         }
 
         private string[] Upsert(D365Model[] items, D365ModelMetdaData meta)
@@ -121,7 +134,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
             
         }
-        private string UpdateV2(D365Model[] items, D365ModelMetdaData meta)
+        private string UpdateV2(D365Model[] items, D365ModelMetdaData meta, JObject inputLookUps)
         {
             JObject result = new JObject();
             result["ops"] = "updateV2";
@@ -135,7 +148,9 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 result["errors"] = JArray.FromObject(new string[] { "No item to update " });
                 return result.ToString();
             }
-            var lookUps = _loopupService.FetchLookUpValues(meta);
+            JObject lookUps = _loopupService.FetchLookUpValues(meta);
+            lookUps.Merge(inputLookUps);
+            result["lookups"] = lookUps;
             result["lookups-errors"] = lookUps["errors"];
             foreach (D365Model model in items)
             {
@@ -201,92 +216,6 @@ namespace ECC.Institute.CRM.IntegrationAPI
             return $"{result}";
         }
 
-        
-
-        private string[] Update(D365Model[] items, D365ModelMetdaData meta)
-        {
-            var resultsSuccess = new List<string>()
-            {
-                 $"Update | D365 | {meta.tag} | Following itmes are upserted"
-            };
-            var resultFailure = new List<string>
-            {
-                $"Update | D365 | {meta.tag} | Error: Received follwing errors"
-            };
-            // Call All the records
-            if (items.Count() < 1)
-            {
-                throw new Exception($"[Update][{meta.tag}] No item to update");
-            }
-            var allResp = _d365webapiservice.SendMessageAsync(HttpMethod.Get, meta.SelectQuery());
-            if (allResp.IsSuccessStatusCode)
-            {
-                var allRecords = JObject.Parse(allResp.Content.ReadAsStringAsync().Result);
-                if (allRecords != null)
-                {
-                    var proccessiongItems = new List<ModelProcessUnit>(); ;
-                    JToken[]? existingValues = allRecords.GetValue("value")?.ToArray();
-                    if (existingValues?.Length > 0)
-                    {
-                        foreach(D365Model model in items)
-                        {
-                            var matchings = existingValues
-                                .Where(obj => obj[meta.businessKey]?.ToString() != null)
-                                .Where((obj) => obj[meta.businessKey]?.ToString() == model.KeyValue())
-                                .Select(obj => obj[meta.primaryKey]?.ToString() ?? "").ToArray();
-
-                            if (matchings.Length > 0)
-                            {
-                                proccessiongItems.Add(new ModelProcessUnit(model, matchings));
-                            } else
-                            {
-                                proccessiongItems.Add(new ModelProcessUnit(model, new string[] {}));
-                            }
-                        }
-                    } else
-                    {
-                        // No previuos record, create new
-                        foreach (D365Model model in items)
-                        {
-                            proccessiongItems.Add(new ModelProcessUnit(model, new string[] { }));
-                        }
-                    }
-                    // Start processing Queue
-                    foreach(ModelProcessUnit unit in proccessiongItems)
-                    {
-                        try
-                        {
-                            _logger.LogInformation($"[Update]{meta.tag} | Starting | model = {unit.item.KeyValue()}, {unit.existing}");
-                            if (unit.existing.Length > 0)
-                            {
-                                resultsSuccess.Add(this.UpdateAtomic(unit.item, meta ,unit.existing));
-                            }
-                            else
-                            {
-                                resultsSuccess.Add(this.CreateAtomic(unit.item, meta)); 
-                            }
-
-                        } catch (Exception excp)
-                        {
-                            resultFailure.Add(excp.Message);
-                        }
-                    }
-                }
-                else
-                {
-                    throw new Exception($"[Update][{meta.tag}] Null records received: \n {ResponseDescription(allResp)}");
-                }
-            }
-            else
-            {
-                throw new Exception($"[Update][{meta.tag}] Unable to find existing records: \n {ResponseDescription(allResp)}");
-            }
-            if (resultFailure.Count > 1)
-            {
-                throw new Exception(string.Join("\n", resultFailure));
-            }
-            return resultsSuccess.ToArray();
-        }
         private string UpdateAtomic(D365Model model, D365ModelMetdaData meta, string[] existings)
         {
             var resultsSuccess = new List<string>()
@@ -297,7 +226,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
             {
                 $"UpdateAtomic | D365 | {meta.tag} | Error: Received follwing errors: {existings}"
             };
-            var body = meta.GetD365DataModel(model).ToString();
+            var json = meta.GetD365DataModel(model);
+            var body = json.ToString();
             _logger.LogInformation($"UpdateAtomic | D365 | {meta.tag} | Request {body}");
             foreach (string id in existings)
             {
@@ -313,6 +243,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 {
                     _logger.LogInformation($"{marker} | Fail | {ResponseDescription(resp)}");
                     resultFailure.Add($"{marker} | Fail | {ResponseDescription(resp)}");
+                    resultFailure.Add($"{marker} | Fail | Body | {json}");
                 }
             }
             if (resultFailure.Count > 1)
@@ -323,7 +254,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
         }
         private string CreateAtomic(D365Model model, D365ModelMetdaData meta)
         {
-            var body = meta.GetD365DataModel(model).ToString();
+            var json = meta.GetD365DataModel(model);
+            var body = json.ToString();
             var marker = $"CreateAtomic | {meta.tag} | [{model.KeyValue()}] | body: {body}";
             var resp = _d365webapiservice.SendCreateRequestAsync($"{meta.entityName}", body);
             if (resp.IsSuccessStatusCode)
@@ -333,7 +265,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             } else
             {
                 _logger.LogInformation($"{marker} | Fail | {ResponseDescription(resp)}");
-                throw new Exception($"{marker} | Fail | {ResponseDescription(resp)}");
+                throw new Exception($"{marker} | Fail | {ResponseDescription(resp)} | body | {json}");
             }
         }
     }

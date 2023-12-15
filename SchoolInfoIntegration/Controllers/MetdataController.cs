@@ -67,12 +67,74 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
 
-        [HttpGet("GetMultiSelectPicklistValues")]
-        public ActionResult<string> GetMultiSelectPicklistValues(string tableName)
+        [HttpGet("GetAllChoiceValues/{applicationName}")]
+        public ActionResult<string> GetAllChoiceValues([FromRoute] string applicationName, string tableName)
         {
             if (string.IsNullOrEmpty(tableName))
                 return BadRequest("Invalid Request - tableName is required");
+            if (string.IsNullOrEmpty(applicationName))
+                return BadRequest("Invalid Request - applicationName is required");
+            _d365webapiservice.Application = applicationName;
+            // GetMultiSelectPicklistValues
+            string message = $"EntityDefinitions(LogicalName='{tableName}')/Attributes/Microsoft.Dynamics.CRM.MultiSelectPicklistAttributeMetadata?$select=LogicalName&$expand=GlobalOptionSet($select=Options)";
+            var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
+            JObject[] multiSelecList;
+            if (response.IsSuccessStatusCode)
+            {
+                var root = JToken.Parse(response.Content.ReadAsStringAsync().Result);
 
+                if (root.Last().First().HasValues)
+                {
+                    var result = JObject.Parse(response.Content.ReadAsStringAsync().Result);
+                    multiSelecList = MinimalFieldDescription(result, tableName);
+                }
+                else
+                {
+                    multiSelecList = Array.Empty<JObject>();
+                }
+            }
+            else
+                return StatusCode((int)response.StatusCode,
+                    $"Failed to Retrieve records: {response.ReasonPhrase}");
+
+            // PickList
+            JObject[] pickList;
+            string messagePickList = $"EntityDefinitions(LogicalName='{tableName}')/Attributes/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=GlobalOptionSet($select=Options)";
+            var response2 = _d365webapiservice.SendMessageAsync(HttpMethod.Get, messagePickList);
+            if (response2.IsSuccessStatusCode)
+            {
+                var root = JToken.Parse(response2.Content.ReadAsStringAsync().Result);
+                System.Console.WriteLine($"Response: {root}");
+                if (root.Last().First().HasValues)
+                {
+                    var result = JObject.Parse(response2.Content.ReadAsStringAsync().Result);
+                    pickList = MinimalFieldDescription(result, tableName);
+                }
+                else
+                {
+                    pickList = Array.Empty<JObject>();
+                }
+            }
+            else
+                return StatusCode((int)response.StatusCode,
+                    $"Failed to Retrieve records: {response.ReasonPhrase}");
+
+            JObject resp = new();
+            resp["tablename"] = tableName;
+            resp["application"] = applicationName;
+            resp["choiceFields"] = JToken.FromObject(pickList.Concat(multiSelecList).ToArray());
+            return Ok($"{resp}");
+        }
+
+
+        [HttpGet("GetMultiSelectPicklistValues/{applicationName}")]
+        public ActionResult<string> GetMultiSelectPicklistValues([FromRoute] string applicationName, string tableName)
+        {
+            if (string.IsNullOrEmpty(tableName))
+                return BadRequest("Invalid Request - tableName is required");
+            if (string.IsNullOrEmpty(applicationName))
+                return BadRequest("Invalid Request - applicationName is required");
+            _d365webapiservice.Application = applicationName;
             string message = $"EntityDefinitions(LogicalName='{tableName}')/Attributes/Microsoft.Dynamics.CRM.MultiSelectPicklistAttributeMetadata?$select=LogicalName&$expand=GlobalOptionSet($select=Options)";
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
             if (response.IsSuccessStatusCode)
@@ -81,6 +143,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 
                 if (root.Last().First().HasValues)
                 {
+                    var result = JObject.Parse(response.Content.ReadAsStringAsync().Result);
                     return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
                 }
                 else
@@ -98,6 +161,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         {
             if (string.IsNullOrEmpty(tableName))
                 return BadRequest("Invalid Request - tableName is required");
+            if (string.IsNullOrEmpty(applicationName))
+                return BadRequest("Invalid Request - applicationName is required");
             _d365webapiservice.Application = applicationName;
             string message = $"EntityDefinitions(LogicalName='{tableName}')/Attributes/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=GlobalOptionSet($select=Options)";
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
@@ -107,7 +172,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 System.Console.WriteLine($"Response: {root}");
                 if (root.Last().First().HasValues)
                 {
-                    return Ok(JSONResp(response.Content.ReadAsStringAsync().Result));
+                    var result = JObject.Parse(response.Content.ReadAsStringAsync().Result);
+                    var finalResponse = MinimalFieldDescription(result, tableName);
+                    return Ok($"{finalResponse}");
                 }
                 else
                 {
@@ -117,6 +184,46 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             else
                 return StatusCode((int)response.StatusCode,
                     $"Failed to Retrieve records: {response.ReasonPhrase}");
+        }
+
+        private JObject[] MinimalFieldDescription(JObject data, string tableName)
+        {
+            JObject[] values = (data.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
+                                .Select(item => (JObject)item).ToArray();
+            List<JObject> items = new();
+            if (values.Length > 0)
+            {
+                foreach(JObject des in values)
+                {
+                    JObject item = new();
+                    item["field_name"] = des["LogicalName"] ?? "NA";
+                    JObject optionSet = (JObject)(des["GlobalOptionSet"] ?? new JObject());
+                    JObject[] options = (optionSet.GetValue("Options")?.ToArray() ?? Array.Empty<JObject>())
+                                .Select(opt => (JObject)opt).ToArray();
+                    if (options.Length > 0)
+                    {
+                        List<JObject> fieldOtionValues = new();
+                        foreach(JObject option in options)
+                        {
+                            JObject fieldOption = new();
+                            fieldOption["value"] = option["Value"] ?? "NA";
+                            JObject lable = option.GetValue("Label") as JObject ?? new();
+                            JObject[] localized = (lable.GetValue("LocalizedLabels")?.ToArray() ?? Array.Empty<JObject>())
+                                .Select(opt => (JObject)opt).ToArray();
+                            fieldOption["lable"] = localized[0].GetValue("Label") ?? "NA";
+                            fieldOtionValues.Add(fieldOption);
+                        }
+                        item["options"] = JToken.FromObject(fieldOtionValues.ToArray());
+                    } else
+                    {
+                        item["options"] = JToken.FromObject(Array.Empty<JObject>());
+                        item["remarks"] = "No option values";
+                    }
+                    items.Add(item);
+                }
+                return items.ToArray();
+            }
+            return Array.Empty<JObject>();
         }
 
         [HttpGet("GetFieldDescritions")]

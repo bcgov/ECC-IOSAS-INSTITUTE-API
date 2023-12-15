@@ -105,14 +105,34 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             return $"{entityName}?$select={businessKey},{primaryKey}";
         }
+        public string[] OtherSelectedColumns()
+        {
+            return Array.Empty<string>();
+        }
+        protected string SelectStatement()
+        {
+            string[] otherColumns = OtherSelectedColumns();
+            if (otherColumns.Length > 0)
+            {
+                string otherSelectedColumns = string.Join(",", otherColumns);
+                return $"{businessKey},{primaryKey},{otherSelectedColumns}";
+            }else
+            {
+                return $"{businessKey},{primaryKey}";
+            }
+        }
+        public virtual string CustomSelectQuery()
+        {
+            return $"{entityName}?$select={SelectStatement()}";
+        }
         public string FilterAndSelectQuery(string value)
         {
-            return $"{entityName}?$select={businessKey},{primaryKey}&$filter={businessKey} eq '{value.Trim()}'";
+            return $"{entityName}?$select={SelectStatement()}&$filter={businessKey} eq '{value.Trim()}'";
         }
         public string FilterAndSelectLookUpQuery(string[] values)
         {
             var finalValues = values.Select(value => $"'{value}'");
-            return $"{entityName}?$select={businessKey},{primaryKey}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{businessKey}',PropertyValues=[{string.Join(",",finalValues)}])";
+            return $"{entityName}?$select={SelectStatement()},{primaryKey}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{businessKey}',PropertyValues=[{string.Join(",",finalValues)}])";
         }
         public string BuisnessKeyValue(JObject obj)
         {
@@ -158,15 +178,27 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     class IOSASOwnerOperator: D365ModelMetdaData
     {
         public IOSASOwnerOperator() : base("iosas_owner_operator", "iosas_owneroperators", "iosas_owneroperatorid", "iosas_owneroperatornumber") { }
+
+        
+
     }
     class IOSASFundingGroup: D365ModelMetdaData
     {
         public IOSASFundingGroup(): base("iosas_fundinggroup", "iosas_fundinggroups", "iosas_fundinggroupid", "iosas_name") { }
     }
 
+    class IOSASInspcetionFundingGroup : D365ModelMetdaData
+    {
+        public IOSASInspcetionFundingGroup() : base("iosas_inspectionfundinggroup", "iosas_inspectionfundinggroups", "iosas_inspectionfundinggroupid", "iosas_name") { }
+        public override string CustomSelectQuery()
+        {
+            return $"{entityName}?$select={SelectStatement()}&$filter=iosas_facilitycode ne null and iosas_schoolfundingcode ne null";
+        }
+    }
+
     class IOSASSchoolGroup : D365ModelMetdaData
     {
-        public IOSASSchoolGroup() : base("iosas-school-group", "iosas_inspectionfundinggroups", "iosas_inspectionfundinggroupid", "iosas_name") { }
+        public IOSASSchoolGroup() : base("iosas-school-group", "iosas_inspectionfundinggroup", "iosas_inspectionfundinggroups", "iosas_name") { }
     }
 
 
