@@ -48,14 +48,24 @@ namespace ECC.Institute.CRM.IntegrationAPI
             _loopupService = new LookUpService(_d365webapiservice, logger);
         }
 
-        public string DistrictUpsert(SchoolDistrict[] districts)
+        public string DistrictUpsertIOSAS(SchoolDistrict[] districts)
         {
             return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts), new JObject());
         }
 
-        public string AuthorityUpsert(SchoolAuthority[] authorities)
+        public string DistrictUpsertISFS(SchoolDistrict[] districts)
+        {
+            return this.UpdateV2(districts, SchoolDistrictISFS.Create(districts), new JObject());
+        }
+
+        public string AuthorityUpsertIOSAS(SchoolAuthority[] authorities)
         {
             return this.UpdateV2(authorities, SchoolAuthorityIOSAS.Create(authorities), new JObject());
+        }
+
+        public string AuthorityUpsertISFS(SchoolAuthority[] authorities)
+        {
+            return this.UpdateV2(authorities, SchoolAuthorityISFS.Create(authorities), new JObject());
         }
 
         public string SchoolUpsert(School[] schools)

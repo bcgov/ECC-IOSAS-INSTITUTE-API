@@ -43,6 +43,19 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             this.name = name;
         }
+        public static D365Application FromString(string name)
+        {
+            if (name.ToLower() == "iosas")
+            {
+                return D365Application.IOSAS;
+            } else if (name.ToLower() == "isfs")
+            {
+                return D365Application.ISFS;
+            } else
+            {
+                throw new Exception($"D365Application: Unknown application name: {name}[{name.ToLower()}]");
+            }
+        }
         public override bool Equals(object? obj)
         {
             return this.Equals(obj as D365Application);
@@ -155,7 +168,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
 
 
-    class ModeledMetaData<T>: D365ModelMetdaData where T: D365Model
+    public class ModeledMetaData<T>: D365ModelMetdaData where T: D365Model
     {
         public T[]? values; 
         public ModeledMetaData(string tag, string entity, string key, string businessKey): base(tag, entity,  key,  businessKey)
@@ -177,7 +190,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     }
     class IOSASOwnerOperator: D365ModelMetdaData
     {
-        public IOSASOwnerOperator() : base("iosas_owner_operator", "iosas_owneroperators", "iosas_owneroperatorid", "iosas_owneroperatornumber") { }
+        public IOSASOwnerOperator() : base("iosas_owneroperator", "iosas_owneroperators", "iosas_owneroperatorid", "iosas_owneroperatornumber") { }
 
         override public string CustomSelectQuery()
         {
@@ -210,7 +223,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     class IOSASSchoolGroup : D365ModelMetdaData
     {
-        public IOSASSchoolGroup() : base("iosas-school-group", "iosas_inspectionfundinggroup", "iosas_inspectionfundinggroups", "iosas_name") { }
+        public IOSASSchoolGroup() : base("iosas_inspectionfundinggroup", "iosas_inspectionfundinggroup", "iosas_inspectionfundinggroups", "iosas_name") { }
     }
 
 

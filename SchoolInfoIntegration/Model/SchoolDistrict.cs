@@ -45,6 +45,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("districtRegionCode")]
         public string? DistrictRegionCode { get; set; }
 
+        [JsonPropertyName("districtRegionInternalCode")]
+        public string? DistrictRegionInternalCode { get; set; }
+
         [JsonPropertyName("districtStatusCode")]
         public string? DistrictStatusCode { get; set; }
 
@@ -109,7 +112,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public JObject ToISFS(JObject lookups)
         {
-            return new JObject();
+            var result = ToIOSAS(lookups);
+            result["edu_externalid"] = this.DistrictId;
+            result.Remove("iosas_externalid");
+            result.Remove("edu_Region@odata.bind");
+            return result;
         }
 
         public string UpsertQuery()

@@ -30,9 +30,20 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         {
             try
             {
-                _logger.LogInformation($"Received request to update authoroties for :" + applicationName);
+                _logger.LogInformation($"Received request to update authoroties for : {applicationName}");
+                D365Application application = D365Application.FromString(applicationName.ToLower());
                 var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
-                return Ok(app.AuthorityUpsert(authorities));
+                if (application == D365Application.IOSAS)
+                {
+                    return Ok(app.AuthorityUpsertIOSAS(authorities));
+                } else if (application == D365Application.ISFS)
+                {
+                    return Ok(app.AuthorityUpsertISFS(authorities));
+                } else
+                {
+                    return StatusCode(422, $"Unable to process application with name: {applicationName}");
+                }
+                
                 
             }
             catch (Exception ex)
@@ -46,13 +57,25 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         {
             try
             {
-                _logger.LogInformation("Received request to update authoroties for :" + applicationName);
+                _logger.LogInformation($"Received request to update authoroties for : {applicationName}");
                 foreach (SchoolDistrict district in districts)
                 {
-                    _logger.LogInformation("Received district number = " + district.DistrictNumber + ", name = " + district.DisplayName);
+                    _logger.LogInformation($"Received district number = {district.DistrictNumber}, name = {district.DisplayName}");
                 }
+                D365Application application = D365Application.FromString(applicationName.ToLower());
                 var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
-                return Ok(app.DistrictUpsert(districts));
+                if (application == D365Application.IOSAS)
+                {
+                    return Ok(app.DistrictUpsertIOSAS(districts));
+                }
+                else if (application == D365Application.ISFS)
+                {
+                    return Ok(app.DistrictUpsertISFS(districts));
+                }
+                else
+                {
+                    return StatusCode(422, $"Unable to process application with name: {applicationName}");
+                }
             }
             catch (Exception ex)
             {
@@ -65,10 +88,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         {
             try
             {
-                _logger.LogInformation($"Received request to update authoroties for :" + applicationName);
+                _logger.LogInformation($"Received request to update authoroties for : {applicationName}");
                 foreach (School school in schools)
                 {
-                    _logger.LogInformation($"Received school number = " + school.Mincode + ", name = " + school.DisplayName);
+                    _logger.LogInformation($"Received school number = {school.Mincode} name = {school.DisplayName}");
                 }
                 var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
                 return Ok(app.SchoolUpsert(schools));

@@ -6,8 +6,8 @@ using System.Net;
 using System.ComponentModel.DataAnnotations;
 
 /**
- * DataModel: 
- */
+    * DataModel: 
+    */
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
     public partial class SchoolAuthority: D365Model
@@ -135,8 +135,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["edu_address_province"] = mailing.ProvinceCode;
                 result["edu_address_country"] = mailing.CountryCode;
             }
-                // Contact Mapping: Finding oldest Auth type contact
-                const string AuthTypeCode = "INDAUTHREP";
+            // Contact Mapping: Finding oldest Auth type contact
+            const string AuthTypeCode = "INDAUTHREP";
             var authContacts = this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode).ToArray();
             var sortedAuthContacts = authContacts?.OrderBy((contact) => contact.CreateDate).ToArray();
             if (sortedAuthContacts?.Length > 0)
@@ -150,7 +150,29 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public JObject ToISFS(JObject lookups)
         {
-            return new JObject();
+            var result = ToIOSAS(lookups);
+                
+            result["statecode"] = AuthorityStatus == "OPEN" ? 1 : 0;
+            result["edu_externalid"] = this.IndependentAuthorityId;
+            result.Remove("iosas_authoritystatus");
+            result.Remove("iosas_firstname");
+            result.Remove("iosas_lastname");
+            result.Remove("iosas_maincontact");
+            // edu_contact_first_name
+            // edu_contact_last_name
+            // edu_contact_email
+            // Contact Mapping: Finding oldest Auth type contact
+            const string AuthTypeCode = "INDAUTHREP";
+            var authContacts = this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode).ToArray();
+            var sortedAuthContacts = authContacts?.OrderBy((contact) => contact.CreateDate).ToArray();
+            if (sortedAuthContacts?.Length > 0)
+            {
+                var contact = sortedAuthContacts[0];
+                result["edu_contactfirstname"] = contact.FirstName;
+                result["edu_contactlastname"] = contact.LastName;
+                result["edu_contactemail"] = contact.Email;
+            }
+            return result;
         }
 
     }
