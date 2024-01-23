@@ -64,7 +64,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_number"] = $"SD{this.KeyValue()}";
             result["edu_internalcode"] = this.KeyValue();
             result["edu_name"] = this.DisplayName;
-            result["edu_districtstatus"] = this.DistrictStatusCode == "ACTIVE" ? true : false; // Active : 1, Inactiave: 0
+            result["edu_districtstatus"] = this.DistrictStatusCode == "ACTIVE" ? true : false; // ACTIVE : 1, INACTIVE: 0
             // result["edu_region"] = this.DistrictRegionCode; // TODO: Have to find a mapping logic
             // { "iosas_edu_Year@odata.bind", $"/edu_years({value._iosas_edu_year_value})" }
             result["edu_fax"] = this.FaxNumber;

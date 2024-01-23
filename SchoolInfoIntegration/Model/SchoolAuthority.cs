@@ -61,8 +61,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public DateTimeOffset OpenedDate { get; set; }
 
         [JsonPropertyName("closedDate")]
-        [Required]
-        public DateTimeOffset ClosedDate { get; set; }
+        public DateTimeOffset? ClosedDate { get; set; }
 
         [JsonPropertyName("contacts")]
         public Contact[]? Contacts { get; set; }
@@ -116,7 +115,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["iosas_authoritystatus"] = AuthorityStatus == "OPEN" ? true: false ; // TODO: Need default value | Missing
             result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
             result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd"); // Format: yyyy-mm-dd
-            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-MM-dd");// Format: yyyy-mm-dd 
+            if (this.ClosedDate != null)
+            {
+                result["edu_closedate"] = this.ClosedDate?.ToString("yyyy-MM-dd");// Format: yyyy-mm-dd 
+            }
             // Physical Address Mapping
             if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
             {
