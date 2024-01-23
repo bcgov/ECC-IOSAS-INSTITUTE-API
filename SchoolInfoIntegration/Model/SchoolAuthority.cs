@@ -25,6 +25,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public DateTimeOffset? UpdateDate { get; set; }
 
         [JsonPropertyName("independentAuthorityId")]
+        [Required]
         public Guid? IndependentAuthorityId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -33,15 +34,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public long? AuthorityNumber { get; set; }
 
         [JsonPropertyName("faxNumber")]
-        [Required]
         public string? FaxNumber { get; set; }
 
         [JsonPropertyName("phoneNumber")]
-        [Required]
         public string? PhoneNumber { get; set; }
 
         [JsonPropertyName("email")]
-        [Required]
         public string? Email { get; set; }
 
         [JsonPropertyName("displayName")]
@@ -112,7 +110,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_phone"] = this.PhoneNumber;
             result["edu_fax"] = this.FaxNumber;
             result["edu_email"] = this.Email;
-            result["iosas_authoritystatus"] = AuthorityStatus == "OPEN" ? true: false ; // TODO: Need default value | Missing
+            result["iosas_authoritystatus"] = AuthorityStatus != null && AuthorityStatus == "OPEN" ? true: false ; // TODO: Need default value | Missing
             result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
             result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd"); // Format: yyyy-mm-dd
             if (this.ClosedDate != null)

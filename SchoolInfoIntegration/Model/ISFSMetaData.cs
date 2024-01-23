@@ -60,7 +60,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override string[]? LookupValuesFor(D365ModelMetdaData lookup)
         {
-            switch (lookup.entityName)
+            /*switch (lookup.entityName)
             {
                 case "edu_regions":
                     return values?
@@ -70,7 +70,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                         .ToArray();
                 default:
                     return null;
-            }
+            }*/
+            return null;
         }
 
         public override JObject GetD365DataModel(D365Model model)

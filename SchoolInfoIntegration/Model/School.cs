@@ -50,15 +50,19 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public DateTimeOffset UpdateDate { get; set; }
 
         [JsonPropertyName("schoolId")]
+        [Required]
         public Guid SchoolId { get; set; }
 
         [JsonPropertyName("districtNumber")]
+        [Required]
         public string DistrictNumber { get; set; }
 
         [JsonPropertyName("schoolAuthorityNumber")]
+        [Required]
         public string SchoolAuthorityNumber { get; set; }
 
         [JsonPropertyName("mincode")]
+        [Required]
         public string? Mincode { get; set; }
 
         // TODO: Missing
@@ -73,10 +77,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("schoolStatus")]
         public string? SchoolStatus { get; set; }
 
-        [JsonPropertyName("independentAuthorityId")]
-        public string? IndependentAuthorityId { get; set; }
 
         [JsonPropertyName("schoolNumber")]
+        [Required]
         public string? SchoolNumber { get; set; }
 
         [JsonPropertyName("faxNumber")]
@@ -92,21 +95,23 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string? Website { get; set; }
 
         [JsonPropertyName("displayName")]
+        [Required]
         public string? DisplayName { get; set; }
 
-        [JsonPropertyName("displayNameNoSpecialChars")]
-        public string? DisplayNameNoSpecialChars { get; set; }
 
         [JsonPropertyName("schoolReportingRequirementCode")]
         public string? SchoolReportingRequirementCode { get; set; }
 
         [JsonPropertyName("schoolOrganizationCode")]
+        [Required]
         public string? SchoolOrganizationCode { get; set; }
 
         [JsonPropertyName("schoolCategoryCode")]
+        [Required]
         public string? SchoolCategoryCode { get; set; }
 
         [JsonPropertyName("facilityTypeCode")]
+        [Required]
         public string? FacilityTypeCode { get; set; }
 
         [JsonPropertyName("facilityTypeNumber")]
@@ -133,8 +138,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public Address[]? Addresses { get; set; }
 
         // TODO: Missing
-        [JsonPropertyName("principal")]
-        public Principal? Principal { get; set; }
+        [JsonPropertyName("schoolPrincipal")]
+        public string? SchoolPrincipal { get; set; }
 
 
         private SchoolCategory Category()

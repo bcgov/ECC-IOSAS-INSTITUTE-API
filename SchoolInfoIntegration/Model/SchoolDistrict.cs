@@ -25,7 +25,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string? DistrictId { get; set; }
 
         [JsonPropertyName("districtNumber")]
-        public string? DistrictNumber { get; set; }
+        [Required]
+        public string DistrictNumber { get; set; }
 
         [JsonPropertyName("faxNumber")]
         public string? FaxNumber { get; set; }
@@ -40,15 +41,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string? Website { get; set; }
 
         [JsonPropertyName("displayName")]
-        public string? DisplayName { get; set; }
+        [Required]
+        public string DisplayName { get; set; }
 
         [JsonPropertyName("districtRegionCode")]
+        [Required]
         public string? DistrictRegionCode { get; set; }
 
-        [JsonPropertyName("districtRegionInternalCode")]
-        public string? DistrictRegionInternalCode { get; set; }
-
         [JsonPropertyName("districtStatusCode")]
+        [Required]
         public string? DistrictStatusCode { get; set; }
 
         [JsonPropertyName("contacts")]
