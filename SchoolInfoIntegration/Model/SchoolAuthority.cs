@@ -12,6 +12,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
     public partial class SchoolAuthority: D365Model
     {
+        [JsonPropertyName("id")]
+        [Required]
+        public string Id { get; set; }
+
         [JsonPropertyName("createUser")]
         public string? CreateUser { get; set; }
 
@@ -26,7 +30,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonPropertyName("independentAuthorityId")]
         [Required]
-        public Guid? IndependentAuthorityId { get; set; }
+        public string IndependentAuthorityId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("authorityNumber")]
@@ -100,6 +104,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             return $"ed_schoolAuthorityNo={this.AuthorityNumber}";
         }
+        public string ExternalId()
+        {
+            return Id;
+        }
 
         public JObject ToIOSAS(JObject lookups)
         {
@@ -113,6 +121,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["iosas_authoritystatus"] = AuthorityStatus != null && AuthorityStatus == "OPEN" ? true: false ; // TODO: Need default value | Missing
             result["edu_authority_type"] = this.AuthorityTypeCode == "INDEPENDNT" ? 757500000 : 757500001; // 757500000 (IND) 757500001 OFFSORE
             result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd"); // Format: yyyy-mm-dd
+            result["iosas_externalid"] = this.IndependentAuthorityId; 
             if (this.ClosedDate != null)
             {
                 result["edu_closedate"] = this.ClosedDate?.ToString("yyyy-MM-dd");// Format: yyyy-mm-dd 
@@ -158,6 +167,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result.Remove("iosas_firstname");
             result.Remove("iosas_lastname");
             result.Remove("iosas_maincontact");
+            result.Remove("iosas_externalid");
             // edu_contact_first_name
             // edu_contact_last_name
             // edu_contact_email

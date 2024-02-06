@@ -50,12 +50,14 @@ namespace ECC.Institute.CRM.IntegrationAPI
 
         public string DistrictUpsertIOSAS(SchoolDistrict[] districts)
         {
-            return this.UpdateV2(districts, SchoolDistrictIOSAS.Create(districts), new JObject());
+            SchoolDistrictIOSAS meta = SchoolDistrictIOSAS.Create(districts);
+            return this.UpdateV2(districts, meta, DisctricLookUpForIOSAS());
         }
 
         public string DistrictUpsertISFS(SchoolDistrict[] districts)
         {
-            return this.UpdateV2(districts, SchoolDistrictISFS.Create(districts), new JObject());
+            SchoolDistrictISFS meta = SchoolDistrictISFS.Create(districts);
+            return this.UpdateV2(districts, meta, DisctricLookUpForISFS());
         }
 
         public string AuthorityUpsertIOSAS(SchoolAuthority[] authorities)
@@ -86,6 +88,26 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 new IOSASInspcetionFundingGroup(),
                 new IOSASOwnerOperator(),
                 new IOSASTeam()
+            };
+            JObject result = _loopupService.FetchLookUpData(relations.ToArray());
+            return result;
+        }
+
+        private JObject DisctricLookUpForIOSAS()
+        {
+            var relations = new List<D365ModelMetdaData>
+            {
+                new EduRegion()
+            };
+            JObject result = _loopupService.FetchLookUpData(relations.ToArray());
+            return result;
+        }
+
+        private JObject DisctricLookUpForISFS()
+        {
+            var relations = new List<D365ModelMetdaData>
+            {
+                new EduRegionISFS()
             };
             JObject result = _loopupService.FetchLookUpData(relations.ToArray());
             return result;
@@ -129,9 +151,34 @@ namespace ECC.Institute.CRM.IntegrationAPI
         {
             return D365ModelUtility.ResponseDescription(message);
         }
-        private string Filter(D365ModelMetdaData meta, string value)
+        private string? FilterByExternalId(D365ModelMetdaData meta, string value)
         {
-            var query = meta.FilterAndSelectQuery(value);
+            var query = meta.FilterAndSelectQueryOnExternalId(value);
+            _logger.LogInformation($"Will Filter Data using extern Query: {query}");
+            var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation($"FilterByExternalId | {meta.tag} | Data by external id exists: {value}");
+                return response.Content.ReadAsStringAsync().Result;
+            }
+            else
+            {
+                var excpMessage = $"FilterByExternalId | {meta.tag}({value}) | Fail (external id) | {ResponseDescription(response)}";
+                _logger.LogInformation(excpMessage);
+                return null;
+            }
+
+        }
+        private string Filter(D365ModelMetdaData meta, D365Model model)
+        {
+            // Try to get filter by external id
+            var reseultByExternalId = FilterByExternalId(meta, model.ExternalId());
+            if (reseultByExternalId != null)
+            {
+                return reseultByExternalId;
+            }
+            // Data with external id not available go with default key
+            var query = meta.FilterAndSelectQuery(model.KeyValue());
             _logger.LogInformation($"Will Filter Data using Query: {query}");
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
             if (response.IsSuccessStatusCode)
@@ -139,7 +186,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 return response.Content.ReadAsStringAsync().Result;
             } else
             {
-                var excpMessage = $"Filter | {meta.tag}({value}) | Fail | {ResponseDescription(response)}";
+                var excpMessage = $"Filter | {meta.tag}({model.KeyValue()}) | Fail | {ResponseDescription(response)}";
                 _logger.LogInformation(excpMessage);
                 throw new Exception(excpMessage);
             }
@@ -174,7 +221,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 status["type"] = meta.tag;
                 try
                 {
-                    var existingString = Filter(meta, model.KeyValue());
+                    var existingString = Filter(meta, model);
                     existing = JObject.Parse(existingString);
                 } catch (Exception excp)
                 {

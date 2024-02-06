@@ -51,7 +51,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonPropertyName("schoolId")]
         [Required]
-        public Guid SchoolId { get; set; }
+        public string SchoolId { get; set; }
 
         [JsonPropertyName("districtNumber")]
         [Required]
@@ -187,6 +187,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000 : 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
             result["edu_schoolcategory"] = (int)this.Category(); // TODOD: OFFSHORE | PUBLIC |
             result["iosas_facilitytypeoffshore"] = (int)this.Facility();
+            result["iosas_externalid"] = this.SchoolId;
             // Required fields 
 
             // Mail Address Mapping
@@ -223,7 +224,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public JObject ToISFS(JObject lookups)
         {
-            return new JObject();
+            var result = ToIOSAS(lookups);
+            result["edu_email"] = this.Email;
+            result.Remove("iosas_externalid");
+            result.Remove("iosas_email");
+            result.Remove("iosas_facilitytypeoffshore");
+            return result;
         }
 
         public string UpsertQuery()
@@ -254,6 +260,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string KeyDisplay()
         {
             return $"schoolMinCode={this.Mincode}";
+        }
+        public string ExternalId()
+        {
+            return SchoolId;
         }
     }
 }

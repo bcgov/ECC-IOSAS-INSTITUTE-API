@@ -335,7 +335,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 
             if (string.IsNullOrEmpty(values))
                 return BadRequest("Invalid Request - values is required");
-            var fianlValues = values.Split(",").Select(val => $"'{val}'"); // isNumber ? $"{val}" : $"\"{val}\"")
+            var fianlValues = values.Split(",").Select(val => val == "'null'" ? "null" : $"'{val}'"); // isNumber ? $"{val}" : $"\"{val}\"")
             string message = string.Format($"{tableName}?$select={columns}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{keyName}',PropertyValues=[{string.Join(",", fianlValues)}])");
 
             _logger.LogInformation($"The Filter Query: {message} | Application: {applicationName}");

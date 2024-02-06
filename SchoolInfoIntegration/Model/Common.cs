@@ -18,6 +18,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string Key();
         public string KeyValue();
         public string KeyDisplay();
+        public string ExternalId();
     }
 
     public class D365ModelUtility

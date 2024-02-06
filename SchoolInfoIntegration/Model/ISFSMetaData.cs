@@ -2,22 +2,43 @@
 using Newtonsoft.Json.Linq;
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
-	public class ISFSMetaData
-	{
-		public ISFSMetaData()
-		{
-		}
-	}
+	public class ISFSMetaData: D365ModelMetdaData
+    {
+        protected ISFSMetaData(string tag, string entity, string key, string businessKey): base(tag, entity, key, businessKey)
+        {
+            this.externalIdKey = "edu_externalid";
+        }
+    }
 
-    class EduRegionISFS : D365ModelMetdaData
+    public class ISFSSModeledMetaData<T> : ISFSMetaData where T : D365Model
+    {
+        public T[]? values;
+        public ISFSSModeledMetaData(string tag, string entity, string key, string businessKey) : base(tag, entity, key, businessKey)
+        {
+
+        }
+        public virtual JObject? TransformToD365(D365Application application, T model) { throw NotImplementedException(); }
+
+        private Exception NotImplementedException()
+        {
+            throw new NotImplementedException();
+        }
+
+    }
+
+    class EduRegionISFS : ISFSMetaData
     {
         public EduRegionISFS() : base("edu_region", "edu_regions", "edu_regionid", "edu_internalcode") { }
+        public override string CustomSelectQuery()
+        {
+            return $"{entityName}?select=edu_regionid,edu_internalcode,edu_name";
+        }
     }
 
     // edu_school
     // edu_schoolauthority
     // edu_schooldistrict
-    public class SchoolAuthorityISFS: ModeledMetaData<SchoolAuthority>
+    public class SchoolAuthorityISFS: ISFSSModeledMetaData<SchoolAuthority>
 	{
         // TableName: edu_schoolauthority
         public SchoolAuthorityISFS() : base("edu_schoolauthority", "edu_schoolauthorities", "edu_schoolauthorityid", "edu_authority_no")
@@ -41,7 +62,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
     }
 
-    public class SchoolDistrictISFS: ModeledMetaData<SchoolDistrict>
+    public class SchoolDistrictISFS: ISFSSModeledMetaData<SchoolDistrict>
     {
         public SchoolDistrictISFS() : base("edu_schooldistrict", "edu_schooldistricts", "edu_schooldistrictid", "edu_internalcode")
         {

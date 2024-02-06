@@ -103,6 +103,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string primaryKey;
         public string businessKey;
         public string createDateColumn;
+        public string externalIdKey;
         public string tag;
         public List<D365ModelMetdaData> lookupsMetaData = new ();
         public JObject lookUps = new ();
@@ -113,6 +114,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             primaryKey = key;
             this.businessKey = businessKey;
             createDateColumn = "createDateColumn";
+            this.externalIdKey = "iosas_externalid";
         }
         public string SelectQuery()
         {
@@ -137,6 +139,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public virtual string CustomSelectQuery()
         {
             return $"{entityName}?$select={SelectStatement()}";
+        }
+        public string FilterAndSelectQueryOnExternalId(string value)
+        {
+            return $"{entityName}?$select={SelectStatement()}&$filter={externalIdKey} eq '{value.Trim()}'";
         }
         public string FilterAndSelectQuery(string value)
         {
@@ -187,6 +193,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     class EduRegion: D365ModelMetdaData
     {
         public EduRegion(): base("edu_region", "edu_regions", "edu_regionid", "edu_regionnumber") { }
+        public override string CustomSelectQuery()
+        {
+            return $"{entityName}?$select=edu_regionid,edu_regionnumber,edu_name";
+        }
     }
     class IOSASOwnerOperator: D365ModelMetdaData
     {
@@ -282,9 +292,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     {
         public SchoolDistrictIOSAS(): base("edu_schooldistrict", "edu_schooldistricts", "edu_schooldistrictid", "edu_internalcode")
         {
-            // Adding lookups
-            lookupsMetaData.Add(new EduRegion());
-
         }
         public static SchoolDistrictIOSAS Create(SchoolDistrict[] input)
         {

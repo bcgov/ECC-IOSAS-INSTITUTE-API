@@ -22,7 +22,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string? UpdateDate { get; set; }
 
         [JsonPropertyName("districtId")]
-        public string? DistrictId { get; set; }
+        [Required]
+        public string DistrictId { get; set; }
 
         [JsonPropertyName("districtNumber")]
         [Required]
@@ -58,7 +59,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("addresses")]
         public Address[]? Addresses { get; set; }
 
-
         public JObject ToIOSAS(JObject lookups)
         {
             var result = new JObject();
@@ -69,9 +69,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             // result["edu_region"] = this.DistrictRegionCode; // TODO: Have to find a mapping logic
             // { "iosas_edu_Year@odata.bind", $"/edu_years({value._iosas_edu_year_value})" }
             result["edu_fax"] = this.FaxNumber;
-            result["edu_email"] = this.Email;
             result["edu_website"] = this.Website;
             result["iosas_externalid"] = this.DistrictId;
+            result["iosas_email"] = this.Email;
             var empty = Array.Empty<Address>();
             // Mail Address Mapping
             if (Address.getAddressWithType(AddressType.Mailing.Value, this.Addresses) is var mailingAddress && mailingAddress != null)
@@ -96,16 +96,30 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
             // Edu region: Lookup
             JObject[]? regions = lookups.GetValue("edu_regions")?
-                .ToArray()
-                .Select(token => (JObject)token)
-                .ToArray();
-            if (regions != null && regions.Length > 0 &&
-                Array.Find(regions, (region) => region.GetValue("edu_regionnumber")?.ToString() == this.DistrictRegionCode) is var selectedRegion &&
-                selectedRegion != null &&
-                selectedRegion.GetValue("edu_regionid")?.ToString() is var regionId &&
-                regionId != null
+                   .ToArray()
+                   .Select(token => (JObject)token)
+                   .ToArray();
+            var isRegionsAvailable = regions != null && regions.Length > 0;
+            if (isRegionsAvailable && this.DistrictRegionCode != null && RegionMapper.Shared().GetValueForRegion(DistrictRegionCode ?? "") is var regionNumber && regionNumber != null)
+            {
+                if (regions != null && regions.Length > 0 &&
+                    Array.Find(regions, (region) => region.GetValue("edu_regionnumber")?.ToString() == regionNumber) is var selectedRegion &&
+                    selectedRegion != null &&
+                    selectedRegion.GetValue("edu_regionid")?.ToString() is var regionId &&
+                    regionId != null
+                    )
+                {
+                    result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
+
+                }
+            } else if (isRegionsAvailable && regions != null &&
+                Array.Find(regions, (region) => region.GetValue("edu_name")?.ToString().ToLower().Contains("other") ?? false) is var otherRegion &&
+                otherRegion != null &&
+                otherRegion.GetValue("edu_regionid")?.ToString() is var regionId &&
+                    regionId != null
                 )
             {
+                // Assign other region
                 result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
 
             }
@@ -116,7 +130,38 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             var result = ToIOSAS(lookups);
             result["edu_externalid"] = this.DistrictId;
             result.Remove("iosas_externalid");
+            result.Remove("iosas_email");
             result.Remove("edu_Region@odata.bind");
+            // Edu region: Lookup
+            JObject[]? regions = lookups.GetValue("edu_regions")?
+                   .ToArray()
+                   .Select(token => (JObject)token)
+                   .ToArray();
+            var isRegionsAvailable = regions != null && regions.Length > 0;
+            if (isRegionsAvailable && this.DistrictRegionCode != null && RegionMapper.Shared().GetValueForRegion(DistrictRegionCode ?? "") is var regionNumber && regionNumber != null)
+            {
+                if (regions != null && regions.Length > 0 &&
+                    Array.Find(regions, (region) => region.GetValue("edu_internalcode")?.ToString() == regionNumber) is var selectedRegion &&
+                    selectedRegion != null &&
+                    selectedRegion.GetValue("edu_regionid")?.ToString() is var regionId &&
+                    regionId != null
+                    )
+                {
+                    result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
+
+                }
+            }
+            else if (isRegionsAvailable && regions != null &&
+                Array.Find(regions, (region) => region.GetValue("edu_name")?.ToString().ToLower().Contains("other") ?? false) is var otherRegion &&
+                otherRegion != null &&
+                otherRegion.GetValue("edu_regionid")?.ToString() is var regionId &&
+                    regionId != null
+                )
+            {
+                // Assign other region
+                result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
+
+            }
             return result;
         }
 
@@ -150,6 +195,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string KeyDisplay()
         {
             return $"schoolDistrictNo={this.KeyValue()}";
+        }
+
+        public string ExternalId()
+        {
+            return DistrictId;
         }
     }
 }
