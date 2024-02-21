@@ -93,8 +93,20 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 {
                     _logger.LogInformation($"Received school number = {school.Mincode} name = {school.DisplayName}");
                 }
+                D365Application application = D365Application.FromString(applicationName.ToLower());
                 var app = ApplicationFactory.Create(_d365webapiservice, applicationName.ToUpper(), _logger);
-                return Ok(app.SchoolUpsert(schools));
+                if (application == D365Application.IOSAS)
+                {
+                    return Ok(app.SchoolUpsertIOSAS(schools));
+                }
+                else if (application == D365Application.ISFS)
+                {
+                    return Ok(app.SchoolUpsertForISFS(schools));
+                }
+                else
+                {
+                    return StatusCode(422, $"Unable to process application with name: {applicationName}");
+                }
             }
             catch (Exception ex)
             {

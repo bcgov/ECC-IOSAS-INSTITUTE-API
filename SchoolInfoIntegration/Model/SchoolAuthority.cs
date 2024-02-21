@@ -12,10 +12,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
     public partial class SchoolAuthority: D365Model
     {
-        [JsonPropertyName("id")]
-        [Required]
-        public string Id { get; set; }
-
+       
         [JsonPropertyName("createUser")]
         public string? CreateUser { get; set; }
 
@@ -74,7 +71,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public string UpsertQuery()
         {
-
             return $"edu_schoolauthorities(edu_authority_no='{this.AuthorityNumber}')";
         }
 
@@ -106,7 +102,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public string ExternalId()
         {
-            return Id;
+            return IndependentAuthorityId;
         }
 
         public JObject ToIOSAS(JObject lookups)

@@ -58,12 +58,19 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string DistrictNumber { get; set; }
 
         [JsonPropertyName("schoolAuthorityNumber")]
-        [Required]
         public string SchoolAuthorityNumber { get; set; }
+
+        [JsonPropertyName("independentAuthorityId")]
+        [Required]
+        public string SchoolAuthorityId { get; set; }
 
         [JsonPropertyName("mincode")]
         [Required]
         public string? Mincode { get; set; }
+
+        [JsonPropertyName("districtId")]
+        [Required]
+        public string DistrictId { get; set; }
 
         // TODO: Missing
         [JsonPropertyName("certficateGrade")]
@@ -170,6 +177,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
         }
 
+        static public string[] SchoolAuthorityIds(School[] schools)
+        {
+            return schools.Where(school => school.SchoolAuthorityId != null).Select(school => school.SchoolAuthorityId ?? "").ToArray();
+        }
+        static public string[] SchoolDistrictIds(School[] schools)
+        {
+            return schools.Select(school => school.DistrictId).ToArray();
+        }
+
         public JObject ToIOSAS(JObject lookups)
         {
             var result = new JObject();
@@ -212,6 +228,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["edu_address2_province"] = address.ProvinceCode;
                 result["edu_address2_country"] = address.CountryCode;
             }
+            // Authority
+            SchoolAuthorityIOSAS schoolAuthMeta = new();
+            AssignLookupKeyUsingExternalId(schoolAuthMeta, lookups, "iosas_authority", result);
+            // School District
+            SchoolDistrictIOSAS schoolDistrictMeta = new();
+            AssignLookupKeyUsingExternalId(schoolDistrictMeta, lookups, "edu_SchoolDistrict", result);
+
             // Handling Lookups
             // (School group)  => iosas_inspectionfundinggroup.iosas_facilitycode == 8
             // Funding Group => iosas_fundinggroups.iosas_name == concat("Group " + data.SchoolFundingGroup)
@@ -221,6 +244,30 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
 
             return result;
+        }
+        private void AssignLookupKeyUsingExternalId(D365ModelMetdaData meta, JObject lookups, string assignmentKey, JObject result)
+        {
+            if (GetLookValue(lookups, meta.entityName, meta.externalIdKey, ExternalId(), meta.primaryKey) is var id && id != null)
+            {
+                result[$"{assignmentKey}@odata.bind"] = $"{meta.entityName}({id})";
+            }
+        }
+        private static void AssignLookupMatchingValue(D365ModelMetdaData meta, JObject lookups, string assignmentKey, string matchingValue, JObject result)
+        {
+            if (GetLookValue(lookups, meta.entityName, meta.externalIdKey, matchingValue, meta.primaryKey) is var id && id != null)
+            {
+                result[$"{assignmentKey}@odata.bind"] = $"{meta.entityName}({id})";
+            }
+        }
+        private static string? GetLookValue(JObject lookup, string lookupKey, string matchingKey ,string matchingValue, string idKey)
+        {
+            return lookup.GetValue(lookupKey)?
+                   .ToArray()
+                   .Select(token => (JObject)token)
+                   .Where(item => item.GetValue(matchingKey)?.ToString() == matchingValue)
+                   .ToArray()[0]?
+                   .GetValue(idKey)?
+                   .ToString();
         }
         public JObject ToISFS(JObject lookups)
         {

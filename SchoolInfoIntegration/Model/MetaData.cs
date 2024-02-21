@@ -153,6 +153,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             var finalValues = values.Select(value => $"'{value}'");
             return $"{entityName}?$select={SelectStatement()},{primaryKey}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{businessKey}',PropertyValues=[{string.Join(",",finalValues)}])";
         }
+        public string FilterAndSeclecQueryByExternalIds(string[] externalIds)
+        {
+            var finalValues = externalIds.Select(value => $"'{value}'");
+            return $"{entityName}?$select={SelectStatement()},{primaryKey}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{externalIdKey}',PropertyValues=[{string.Join(",", finalValues)}])";
+        }
         public string BuisnessKeyValue(JObject obj)
         {
             return obj.GetValue(businessKey)?.ToString() ?? "";
@@ -172,6 +177,16 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
     }
 
+    public class LookUpConfig
+    {
+        public D365ModelMetdaData Model;
+        public string[] ExternalIds;
+        public LookUpConfig(D365ModelMetdaData model, string[] ids)
+        {
+            this.Model = model;
+            this.ExternalIds = ids;
+        }
+    }
 
 
     public class ModeledMetaData<T>: D365ModelMetdaData where T: D365Model

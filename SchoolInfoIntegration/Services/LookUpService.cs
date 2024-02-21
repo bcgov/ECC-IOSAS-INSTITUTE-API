@@ -15,6 +15,49 @@ namespace ECC.Institute.CRM.IntegrationAPI
 			_d365webapiservice = service;
 			_logger = logger;
 		}
+        public JObject FetchLookUpByExternalId(LookUpConfig[] configs)
+        {
+            JObject result = new();
+            JObject errors = new();
+            foreach(LookUpConfig config in configs)
+            {
+                var meta = config.Model;
+                try
+                {
+                    var query = config.Model.FilterAndSeclecQueryByExternalIds(config.ExternalIds);
+                    _logger.LogInformation($"FetchLookUpByExternalId | {meta.tag} | Will Fetch data with query => {query}");
+                    var resp = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        try
+                        {
+                            var jsonResponse = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
+                            JObject[] values = (jsonResponse.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
+                                .Select(item => (JObject)item).ToArray();
+                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {values}");
+                            result[meta.entityName] = JToken.FromObject(values);
+                        }
+                        catch (Exception excp)
+                        {
+                            errors[meta.entityName] = $"FetchLookUpByExternalId: Excep(resp parsing): {excp.Message}";
+                        }
+
+                    }
+                    else
+                    {
+                        var error = D365ModelUtility.ResponseDescription(resp);
+                        _logger.LogInformation($"FetchLookUpByExternalId | resp : Error: ${resp}");
+                        errors[meta.entityName] = error;
+                    }
+
+                } catch (Exception excp)
+                {
+                    errors[config.Model.entityName] = $"FetchLookUpByExternalId| exception: ${excp.Message}";
+                }
+            }
+            result["errors"] = errors;
+            return result;
+        }
 		public JObject FetchLookUpData(D365ModelMetdaData[] items)
 		{
 			JObject result = new();
@@ -34,7 +77,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                             JObject[] values = (jsonResponse.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
                                 .Select(item => (JObject)item).ToArray();
 
-                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {items}");
+                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {values}");
                             result[meta.entityName] = JToken.FromObject(values);
                         }
                         catch (Exception excp)

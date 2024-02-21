@@ -69,11 +69,22 @@ namespace ECC.Institute.CRM.IntegrationAPI
         {
             return this.UpdateV2(authorities, SchoolAuthorityISFS.Create(authorities), new JObject());
         }
-
-        public string SchoolUpsert(School[] schools)
+        public string SchoolUpsertIOSAS(School[] schools)
         {
             SchoolIOSAS meta = SchoolIOSAS.Create(schools);
-            return this.UpdateV2(schools, meta, SchoolLookupForIOSAS(meta));
+            var lookupConfigs = new List<LookUpConfig>
+            {
+                new LookUpConfig(new SchoolAuthorityIOSAS(), School.SchoolAuthorityIds(schools)),
+                new LookUpConfig(new SchoolDistrictIOSAS(), School.SchoolDistrictIds(schools))
+            };
+            var schoolLookUpForAuthorityAandDistrict = _loopupService.FetchLookUpByExternalId(lookupConfigs.ToArray());
+            var schoolLookUps = SchoolLookupForIOSAS(meta);
+            schoolLookUps.Merge(schoolLookUpForAuthorityAandDistrict);
+            return this.UpdateV2(schools, meta, schoolLookUps);
+        }
+        public string SchoolUpsertForISFS(School[] schools)
+        {
+            return "Not Implemented";
         }
         public string GetData(D365Model model)
         {
