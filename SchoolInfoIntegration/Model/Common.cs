@@ -19,6 +19,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string KeyValue();
         public string KeyDisplay();
         public string ExternalId();
+        public bool VerifyExisting(D365ModelMetdaData meta, JObject data, ILogger? logger);
+    }
+
+    public interface ID365ImportModel
+    {
+        public JObject ToIOSAS();
+        public JObject ToISFS();
     }
 
     public class D365ModelUtility

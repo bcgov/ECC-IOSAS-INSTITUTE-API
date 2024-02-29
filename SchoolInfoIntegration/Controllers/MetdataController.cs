@@ -236,8 +236,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 return BadRequest("Invalid Request - applicationName is required");
 
             string message = string.Format($"EntityDefinitions(LogicalName='{tableName}')?$select=LogicalName&$expand=Attributes($select=LogicalName,DisplayName,Description)");
-
+            _d365webapiservice.Application = applicationName;
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, message);
+            _logger.LogInformation($"GetFieldDescritions: {applicationName} | ${tableName} | {message}");
             if (response.IsSuccessStatusCode)
             {
                 var root = JToken.Parse(response.Content.ReadAsStringAsync().Result);
@@ -279,7 +280,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 }
                 else
                 {
-                    return NotFound($"No Data");
+                    return NotFound($"No Data {response.Content.ReadAsStringAsync().Result}");
                 }
             }
             else

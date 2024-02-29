@@ -27,7 +27,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonPropertyName("districtNumber")]
         [Required]
-        public string DistrictNumber { get; set; }
+        public long DistrictNumber { get; set; }
 
         [JsonPropertyName("faxNumber")]
         public string? FaxNumber { get; set; }
@@ -189,7 +189,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public string KeyValue()
         {
-            var value = this.DistrictNumber ?? "";
+            var value = this.DistrictNumber.ToString($"D3") ?? "";
             return value;
         }
         public string KeyDisplay()
@@ -200,6 +200,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string ExternalId()
         {
             return DistrictId;
+        }
+
+        public bool VerifyExisting(D365ModelMetdaData meta, JObject data, ILogger? logger)
+        {
+            string buisnessValue = data[meta.businessKey]?.ToString() ?? "";
+            string? externalId = data[meta.externalIdKey]?.ToString();
+            return buisnessValue == this.DistrictNumber.ToString($"D3") && (externalId == null || externalId == "" || externalId == ExternalId()); ;
         }
     }
 }

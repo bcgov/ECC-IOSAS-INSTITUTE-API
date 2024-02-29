@@ -114,7 +114,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             primaryKey = key;
             this.businessKey = businessKey;
             createDateColumn = "createDateColumn";
-            this.externalIdKey = "iosas_externalid";
+            this.externalIdKey = "";
         }
         public string SelectQuery()
         {
@@ -133,7 +133,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 return $"{businessKey},{primaryKey},{otherSelectedColumns}";
             }else
             {
-                return $"{businessKey},{primaryKey}";
+                return externalIdKey != "" ? $"{businessKey},{primaryKey},{externalIdKey}" : $"{businessKey},{primaryKey}";
             }
         }
         public virtual string CustomSelectQuery()
@@ -193,8 +193,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
     {
         public T[]? values; 
         public ModeledMetaData(string tag, string entity, string key, string businessKey): base(tag, entity,  key,  businessKey)
-        { 
-
+        {
+            this.externalIdKey = "iosas_externalid";
         }
         public virtual JObject? TransformToD365(D365Application application, T model) { throw NotImplementedException(); }
 

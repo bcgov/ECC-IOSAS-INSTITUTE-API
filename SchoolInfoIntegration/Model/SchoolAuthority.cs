@@ -4,12 +4,41 @@ using JsonIgnoreAttribute = System.Text.Json.Serialization.JsonIgnoreAttribute;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration;
 
 /**
     * DataModel: 
     */
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
+    public class SchoolAuthorityImport: ID365ImportModel
+    {
+        public string AuthorityId;
+        public long AuthorityNumber;
+        public string Name;
+
+        public JObject ToIOSAS()
+        {
+            return new JObject
+            {
+                new JProperty("edu_authority_no", AuthorityNumber.ToString($"D3")),
+                new JProperty("iosas_externalid", AuthorityId)
+            };
+        }
+        public JObject ToISFS()
+        {
+            return new();
+        }
+    }
+    public class AuthorityMapper: ClassMap<SchoolAuthorityImport>
+    {
+        public AuthorityMapper()
+        {
+            Map(authority => authority.AuthorityId).Name("independent_authority_id");
+            Map(authority => authority.AuthorityNumber).Name("authority_number");
+            Map(authority => authority.Name).Name("display_name");
+        }
+    }
     public partial class SchoolAuthority: D365Model
     {
        
@@ -105,6 +134,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             return IndependentAuthorityId;
         }
 
+        public bool VerifyExisting(D365ModelMetdaData meta, JObject data, ILogger? logger)
+        {
+            string buisnessValue = data[meta.businessKey]?.ToString() ?? "";
+            string? externalId = data[meta.externalIdKey]?.ToString();
+            return buisnessValue == this.AuthorityNumber.ToString() && (externalId == null || externalId == "" || externalId == ExternalId());
+        }
+
         public JObject ToIOSAS(JObject lookups)
         {
             var result = new JObject();
@@ -155,7 +191,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public JObject ToISFS(JObject lookups)
         {
-            var result = ToIOSAS(lookups);
+            JObject result = new();
                 
             result["statecode"] = AuthorityStatus == "OPEN" ? 1 : 0;
             result["edu_externalid"] = this.IndependentAuthorityId;

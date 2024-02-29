@@ -54,15 +54,14 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string SchoolId { get; set; }
 
         [JsonPropertyName("districtNumber")]
-        [Required]
-        public string DistrictNumber { get; set; }
+        public string? DistrictNumber { get; set; }
 
         [JsonPropertyName("schoolAuthorityNumber")]
-        public string SchoolAuthorityNumber { get; set; }
+        public string? SchoolAuthorityNumber { get; set; }
 
         [JsonPropertyName("independentAuthorityId")]
         [Required]
-        public string SchoolAuthorityId { get; set; }
+        public string IndependentAuthorityId { get; set; }
 
         [JsonPropertyName("mincode")]
         [Required]
@@ -110,7 +109,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string? SchoolReportingRequirementCode { get; set; }
 
         [JsonPropertyName("schoolOrganizationCode")]
-        [Required]
         public string? SchoolOrganizationCode { get; set; }
 
         [JsonPropertyName("schoolCategoryCode")]
@@ -128,7 +126,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public DateTimeOffset OpenedDate { get; set; }
 
         [JsonPropertyName("closedDate")]
-        public DateTimeOffset ClosedDate { get; set; }
+        public DateTimeOffset? ClosedDate { get; set; }
 
         [JsonPropertyName("schoolFundingGroup")]
         public string? SchoolFundingGroup { get; set; }
@@ -179,7 +177,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         static public string[] SchoolAuthorityIds(School[] schools)
         {
-            return schools.Where(school => school.SchoolAuthorityId != null).Select(school => school.SchoolAuthorityId ?? "").ToArray();
+            return schools.Where(school => school.IndependentAuthorityId != null).Select(school => school.IndependentAuthorityId ?? "").ToArray();
         }
         static public string[] SchoolDistrictIds(School[] schools)
         {
@@ -189,6 +187,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public JObject ToIOSAS(JObject lookups)
         {
             var result = new JObject();
+            string? authorityNumebr = GetAuthorityNumber(lookups);
             // result["edu_schooldistrict"] = this.DistrictId; // TODO: Need mapping for district > find the code write
             result["edu_name"] = this.DisplayName;
             result["edu_schoolcode"] = this.SchoolNumber;
@@ -198,12 +197,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             result["iosas_email"] = this.Email;
             result["edu_phone"] = this.PhoneNumber;
             result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd");
-            result["edu_closedate"] = this.ClosedDate.ToString("yyyy-MM-dd");
+            result["edu_closedate"] = this.ClosedDate?.ToString("yyyy-MM-dd");
             result["edu_website"] = this.Website;
             result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000 : 757500008; // Mapping: STANDARD: 757500000 | ONLINE 757500008
             result["edu_schoolcategory"] = (int)this.Category(); // TODOD: OFFSHORE | PUBLIC |
             result["iosas_facilitytypeoffshore"] = (int)this.Facility();
             result["iosas_externalid"] = this.SchoolId;
+            result["iosas_authoritynumber"] = authorityNumebr;
             // Required fields 
 
             // Mail Address Mapping
@@ -230,24 +230,49 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
             // Authority
             SchoolAuthorityIOSAS schoolAuthMeta = new();
-            AssignLookupKeyUsingExternalId(schoolAuthMeta, lookups, "iosas_authority", result);
+            AssignLookupKeyUsingExternalId(schoolAuthMeta, lookups, IndependentAuthorityId, "iosas_authority", result);
             // School District
             SchoolDistrictIOSAS schoolDistrictMeta = new();
-            AssignLookupKeyUsingExternalId(schoolDistrictMeta, lookups, "edu_SchoolDistrict", result);
+            AssignLookupKeyUsingExternalId(schoolDistrictMeta, lookups, DistrictId, "edu_SchoolDistrict", result);
 
             // Handling Lookups
             // (School group)  => iosas_inspectionfundinggroup.iosas_facilitycode == 8
             // Funding Group => iosas_fundinggroups.iosas_name == concat("Group " + data.SchoolFundingGroup)
             // Owner filter owners iosas_owneroperators.teamtype == 0 and
             // (iosas_owneroperators.name [In Independent Schools Branch, Offshore School Program] => iosas_owneroperators. */
-            // select operator for iosas_owneroperators.iosas_owneroperatorid == data.AuthorityNumber for Offsore school
 
+            // Owner operator if Non offsore school
+            //  check DL school facility type DIST_LEARN/8 => 
+            // Funding Group is not available
+            // Owner operator id : fetch and save id for independent school user selected owner operator id
+            // Rules to select owner operator id:
+            //  1. For offsore school select operator for iosas_owneroperators.iosas_owneroperatornumber == data.AuthorityNumber for Offsore school
+            // bind key: iosas_owneroperators
+            
+            IOSASOwnerOperator operatorMeta = new();
+            if (Category() == SchoolCategory.Offsore &&
+                authorityNumebr != null &&
+                GetLookValue(lookups, operatorMeta.entityName, "iosas_owneroperatornumber", authorityNumebr, operatorMeta.primaryKey) is var operatorId && operatorId != null)
+            {
+                result["iosas_owneroperators@data.bind"] = $"{operatorMeta.entityName}({operatorId})";
+            }
 
             return result;
         }
-        private void AssignLookupKeyUsingExternalId(D365ModelMetdaData meta, JObject lookups, string assignmentKey, JObject result)
+        private string? GetAuthorityNumber(JObject lookups)
         {
-            if (GetLookValue(lookups, meta.entityName, meta.externalIdKey, ExternalId(), meta.primaryKey) is var id && id != null)
+            SchoolAuthorityIOSAS meta = new();
+            JObject[]? authorities = lookups
+                .GetValue(meta.entityName)?
+                .ToArray()
+                .Where(authority => ((JObject)authority).GetValue(meta.externalIdKey)?.ToString() == ExternalId())
+                .Select(authority => (JObject)authority)
+                .ToArray();
+            return authorities?.Length > 0 ? authorities[0]?.GetValue(meta.businessKey)?.ToString() : null;
+        }
+        private void AssignLookupKeyUsingExternalId(D365ModelMetdaData meta, JObject lookups,string matchingValue, string assignmentKey, JObject result)
+        {
+            if (GetLookValue(lookups, meta.entityName, meta.externalIdKey, matchingValue, meta.primaryKey) is var id && id != null)
             {
                 result[$"{assignmentKey}@odata.bind"] = $"{meta.entityName}({id})";
             }
@@ -261,13 +286,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         private static string? GetLookValue(JObject lookup, string lookupKey, string matchingKey ,string matchingValue, string idKey)
         {
-            return lookup.GetValue(lookupKey)?
+            // System.Console.WriteLine($" {lookupKey} {matchingKey} {matchingValue} {idKey} {lookup.GetValue(lookupKey)}");
+            JObject[]? items = lookup.GetValue(lookupKey)?
                    .ToArray()
-                   .Select(token => (JObject)token)
-                   .Where(item => item.GetValue(matchingKey)?.ToString() == matchingValue)
-                   .ToArray()[0]?
-                   .GetValue(idKey)?
-                   .ToString();
+                   .Select(token => (JObject)token)?
+                   .Where(item => item.GetValue(matchingKey)?.ToString() == matchingValue)?
+                   .ToArray();
+            return items?.Length > 0 ? items[0]?.GetValue(idKey)?.ToString() : null;
         }
         public JObject ToISFS(JObject lookups)
         {
@@ -311,6 +336,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string ExternalId()
         {
             return SchoolId;
+        }
+        public bool VerifyExisting(D365ModelMetdaData meta, JObject data, ILogger? logger)
+        {
+            string buisnessValue = data[meta.businessKey]?.ToString() ?? "";
+            string? externalId = data[meta.externalIdKey]?.ToString();
+            return buisnessValue == this.Mincode && (externalId == null || externalId == "" || externalId == ExternalId()); ;
         }
     }
 }

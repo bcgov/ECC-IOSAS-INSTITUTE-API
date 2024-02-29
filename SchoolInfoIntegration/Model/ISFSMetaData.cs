@@ -31,7 +31,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public EduRegionISFS() : base("edu_region", "edu_regions", "edu_regionid", "edu_internalcode") { }
         public override string CustomSelectQuery()
         {
-            return $"{entityName}?select=edu_regionid,edu_internalcode,edu_name";
+            return $"{entityName}?$select=edu_regionid,edu_internalcode,edu_name";
         }
     }
 

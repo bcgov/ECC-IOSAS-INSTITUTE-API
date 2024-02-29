@@ -162,15 +162,20 @@ namespace ECC.Institute.CRM.IntegrationAPI
         {
             return D365ModelUtility.ResponseDescription(message);
         }
-        private string? FilterByExternalId(D365ModelMetdaData meta, string value)
+        private static JObject[]? CovertToValueArray(string json)
+        {
+            return JObject.Parse(json).GetValue("value")?.ToArray()?.Select(token => (JObject)token).ToArray();
+        }
+        private JObject[]? FilterByExternalId(D365ModelMetdaData meta, string value)
         {
             var query = meta.FilterAndSelectQueryOnExternalId(value);
-            _logger.LogInformation($"Will Filter Data using extern Query: {query}");
+            _logger.LogInformation($"FilterByExternalId: Will Filter Data using extern Query: {query}");
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation($"FilterByExternalId | {meta.tag} | Data by external id exists: {value}");
-                return response.Content.ReadAsStringAsync().Result;
+                string result = response.Content.ReadAsStringAsync().Result;
+                _logger.LogInformation($"FilterByExternalId | {meta.tag} | Data by external id exists: {value} | {result}");
+                return CovertToValueArray(result);
             }
             else
             {
@@ -180,21 +185,21 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
 
         }
-        private string Filter(D365ModelMetdaData meta, D365Model model)
+        public JObject[]? Filter(D365ModelMetdaData meta, D365Model model)
         {
             // Try to get filter by external id
             var reseultByExternalId = FilterByExternalId(meta, model.ExternalId());
-            if (reseultByExternalId != null)
+            if (reseultByExternalId != null && reseultByExternalId.Length > 0)
             {
                 return reseultByExternalId;
             }
             // Data with external id not available go with default key
             var query = meta.FilterAndSelectQuery(model.KeyValue());
-            _logger.LogInformation($"Will Filter Data using Query: {query}");
+            _logger.LogInformation($"Filter | ${meta.tag} | Will Filter Data using Query(legacy): {query}");
             var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
             if (response.IsSuccessStatusCode)
             {
-                return response.Content.ReadAsStringAsync().Result;
+                return CovertToValueArray(response.Content.ReadAsStringAsync().Result);
             } else
             {
                 var excpMessage = $"Filter | {meta.tag}({model.KeyValue()}) | Fail | {ResponseDescription(response)}";
@@ -208,6 +213,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             JObject result = new JObject();
             result["ops"] = "updateV2";
             result["tag"] = meta.tag;
+            result["metaClass"] = meta.GetType().Name;
             var errors = new List<string>();
             var failure = new List<string>();
             var statuses = new List<JObject>();
@@ -224,28 +230,51 @@ namespace ECC.Institute.CRM.IntegrationAPI
             foreach (D365Model model in items)
             {
                 // Get existing data
-                
-                JObject? existing = null;
+
+                JObject[]? existingObjects = null;
                 string[] ids;
                 JObject status = new JObject();
                 status["key"] = model.KeyDisplay();
                 status["type"] = meta.tag;
                 try
                 {
-                    var existingString = Filter(meta, model);
-                    existing = JObject.Parse(existingString);
+                    existingObjects = Filter(meta, model);
                 } catch (Exception excp)
                 {
                     status["filter_issue"] = excp.Message;
                 }
-                if (existing != null && existing?.GetValue("value")?.ToArray() is JToken[] values && values != null && values.Length > 0)
+                if (existingObjects != null && existingObjects.Length > 0)
                 {
-                    _logger.LogInformation($"UpdateV2 | {meta.tag}({model.KeyDisplay()}) | Existing value \n {values}");
-                    status["existings"] = JArray.FromObject(values);
-                    ids = values
+                    _logger.LogInformation($"UpdateV2 | {meta.tag}({model.KeyDisplay()}) | Existing value \n {existingObjects}");
+                    
+                    status["existings"] = JArray.FromObject(existingObjects);
+
+                    try
+                    {
+                        ids = existingObjects
+                        .Where(existing =>
+                        {
+                            bool verifyResult = model.VerifyExisting(meta, (JObject)existing, _logger);
+                            if (verifyResult == false)
+                            {
+                                _logger.LogInformation($"UpdateV2 | {meta.tag}({model.KeyDisplay()}) | Existing verfication fail: {existing}");
+                                throw new Exception("Existing verification fail");
+
+                            }
+                            return verifyResult;
+                        })
                         .Select(value => value[meta.primaryKey]?.ToString() ?? "")
-                        .Where(value => value != null)
+                        .Where(value => value != null && value != "")
                         .ToArray();
+
+                    } catch
+                    {
+                        ids = new string[] { };
+                        errors.Add("Existing verification fail");
+                        status["existing_verify_status"] = "FAIL";
+                        statuses.Add(status);
+                        continue;
+                    }
                     
                 } else
                 {
@@ -258,12 +287,14 @@ namespace ECC.Institute.CRM.IntegrationAPI
                     string resp;
                     if (ids.Length > 0)
                     {
-                       
+                        _logger.LogInformation($"UpdateV2 |  {meta.tag}({model.KeyDisplay()}) | Will update {ids}");
                         status["has_duplicate"] = ids.Length > 1 ? true : false;
                         status["action"] = "update";
+                        status["existing-ids"] = JArray.FromObject(ids);
                         resp = this.UpdateAtomic(model, meta, ids);
                     } else
                     {
+                        _logger.LogInformation($"UpdateV2 |  {meta.tag}({model.KeyDisplay()}) | Will create");
                         status["action"] = "create";
                         resp = this.CreateAtomic(model, meta);
                     }
@@ -285,7 +316,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             return $"{result}";
         }
 
-        private string UpdateAtomic(D365Model model, D365ModelMetdaData meta, string[] existings)
+        public string UpdateAtomic(D365Model model, D365ModelMetdaData meta, string[] existings)
         {
             var resultsSuccess = new List<string>()
             {
