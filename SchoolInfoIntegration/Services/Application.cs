@@ -225,7 +225,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
             JObject lookUps = _loopupService.FetchLookUpValues(meta);
             lookUps.Merge(inputLookUps);
-            result["lookups"] = lookUps;
+            // result["lookups"] = lookUps;
             result["lookups-errors"] = lookUps["errors"];
             foreach (D365Model model in items)
             {
@@ -343,7 +343,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 {
                     _logger.LogInformation($"{marker} | Fail | {ResponseDescription(resp)}");
                     resultFailure.Add($"{marker} | Fail | {ResponseDescription(resp)}");
-                    resultFailure.Add($"{marker} | Fail | Body | {json}");
+                    resultFailure.Add($"{marker} | Fail | Body | {body}");
+
                 }
             }
             if (resultFailure.Count > 1)

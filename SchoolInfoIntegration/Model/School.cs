@@ -41,6 +41,64 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         Host = 757500010
     }
 
+    public partial class SchoolContact
+    {
+        
+        [JsonPropertyName("createUser")]
+        public string? CreateUser { get; set; }
+
+        [JsonPropertyName("updateUser")]
+        public string? UpdateUser { get; set; }
+
+        [JsonPropertyName("createDate")]
+        public DateTimeOffset? CreateDate { get; set; }
+
+        [JsonPropertyName("updateDate")]
+        public DateTimeOffset? UpdateDate { get; set; }
+
+        
+        [JsonPropertyName("schoolContactId")]
+        public Guid? SchoolContactId { get; set; }
+
+        
+        [JsonPropertyName("schoolId")]
+        public Guid? SchoolId { get; set; }
+
+        
+        [JsonPropertyName("schoolContactTypeCode")]
+        public string? SchoolContactTypeCode { get; set; }
+
+        [JsonPropertyName("phoneNumber")]
+        public string? PhoneNumber { get; set; }
+
+        [JsonPropertyName("phoneExtension")]
+        public string? PhoneExtension { get; set; }
+
+        [JsonPropertyName("alternatePhoneNumber")]
+        public string? AlternatePhoneNumber { get; set; }
+
+        [JsonPropertyName("alternatePhoneExtension")]
+        public string? AlternatePhoneExtension { get; set; }
+
+        [JsonPropertyName("email")]
+        public string? Email { get; set; }
+
+        
+        [JsonPropertyName("firstName")]
+        public string? FirstName { get; set; }
+
+        
+        [JsonPropertyName("lastName")]
+        public string? LastName { get; set; }
+
+        
+        [JsonPropertyName("effectiveDate")]
+        public DateTimeOffset? EffectiveDate { get; set; }
+
+        [JsonPropertyName("expiryDate")]
+        public string? ExpiryDate { get; set; }
+    }
+
     public partial class School: D365Model
     {
         [JsonPropertyName("createDate")]
@@ -138,13 +196,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("schoolTeamOwnerOperatorNumber")]
         public string? SchoolTeamOwnerOperatorNumber { get; set; }
 
-        // TODO: Missing
         [JsonPropertyName("addresses")]
         public Address[]? Addresses { get; set; }
 
-        // TODO: Missing
-        [JsonPropertyName("schoolPrincipal")]
-        public string? SchoolPrincipal { get; set; }
+        [JsonPropertyName("contacts")]
+        public SchoolContact[]? Contacts { get; set; }
 
 
         private SchoolCategory Category()
@@ -182,6 +238,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         static public string[] SchoolDistrictIds(School[] schools)
         {
             return schools.Select(school => school.DistrictId).ToArray();
+        }
+
+        private SchoolContact? GetPrincipal()
+        {
+            SchoolContact[]? principals = this.Contacts?.Where(contact => contact.SchoolContactTypeCode == "PRINCIPAL" && contact.ExpiryDate == null).ToArray();
+            return principals != null && principals.Length > 0 ? principals[0] : null;
         }
 
         public JObject ToIOSAS(JObject lookups)
@@ -250,11 +312,25 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             // bind key: iosas_owneroperators
             
             IOSASOwnerOperator operatorMeta = new();
-            if (Category() == SchoolCategory.Offsore &&
-                authorityNumebr != null &&
+            if (authorityNumebr != null &&
                 GetLookValue(lookups, operatorMeta.entityName, "iosas_owneroperatornumber", authorityNumebr, operatorMeta.primaryKey) is var operatorId && operatorId != null)
             {
                 result["iosas_owneroperators@data.bind"] = $"{operatorMeta.entityName}({operatorId})";
+            }
+
+            // Update Principal
+            if (GetPrincipal() is var pricipal && pricipal != null)
+            {
+                string fullName = pricipal.LastName != null ? $"{pricipal.FirstName ?? ""} ${pricipal.LastName}" : $"{pricipal.FirstName ?? ""}";
+                result["iosas_firstname"] = pricipal.FirstName;
+                result["iosas_lastname"] = pricipal.LastName;
+                result["iosas_primarycontactname"] = fullName != "" ? fullName : null;
+                result["iosas_principal"] = fullName != "" ? fullName : null;
+            }
+            // Funding grpup
+            if (GetFundingGroup(lookups) is var group && group != null)
+            {
+                result.Add(group);
             }
 
             return result;
@@ -269,6 +345,32 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 .Select(authority => (JObject)authority)
                 .ToArray();
             return authorities?.Length > 0 ? authorities[0]?.GetValue(meta.businessKey)?.ToString() : null;
+        }
+        private JProperty? GetFundingGroup(JObject lookup)
+        {
+            if (this.SchoolFundingGroup == null)
+            {
+                return null;
+            }
+            string groupName = $"Group {SchoolFundingGroup}";
+            IOSASFundingGroup meta = new();
+            System.Console.WriteLine($"GetFundingGroup => {lookup[meta.entityName]?.ToString()}");
+            JObject[]? fundingGroups = lookup[meta.entityName]?
+                .ToArray()
+                .Select(token => (JObject)token)
+                .Where(item => item.GetValue(meta.businessKey)?.ToString() == groupName)
+                .ToArray();
+            if (fundingGroups != null &&
+                fundingGroups.Length > 0 &&
+                fundingGroups[0] is var fundingGroup &&
+                fundingGroup.GetValue(meta.primaryKey) is var idKey &&
+                idKey != null
+                )
+            {
+                return new JProperty("iosas_fundinggroup@odata.bind", $"{meta.entityName}({idKey})");
+            }
+            return null;
+
         }
         private void AssignLookupKeyUsingExternalId(D365ModelMetdaData meta, JObject lookups,string matchingValue, string assignmentKey, JObject result)
         {
