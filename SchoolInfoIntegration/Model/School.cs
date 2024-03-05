@@ -408,7 +408,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             // Update Principal
             if (GetPrincipal() is var pricipal && pricipal != null)
             {
-                string fullName = pricipal.LastName != null ? $"{pricipal.FirstName ?? ""} ${pricipal.LastName}" : $"{pricipal.FirstName ?? ""}";
+                string fullName = pricipal.LastName != null ? $"{pricipal.FirstName ?? ""} {pricipal.LastName}" : $"{pricipal.FirstName ?? ""}";
                 result["isfs_schoolprincipal"] = fullName != "" ? fullName : null;
             }
 
