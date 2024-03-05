@@ -67,7 +67,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
 
         public string AuthorityUpsertISFS(SchoolAuthority[] authorities)
         {
-            return this.UpdateV2(authorities, SchoolAuthorityISFS.Create(authorities), new JObject());
+            return this.UpdateV2(authorities, AuthorityISFS.Create(authorities), new JObject()); //this.UpdateV2(authorities, SchoolAuthorityISFS.Create(authorities), new JObject());
         }
         public string SchoolUpsertIOSAS(School[] schools)
         {
@@ -84,7 +84,16 @@ namespace ECC.Institute.CRM.IntegrationAPI
         }
         public string SchoolUpsertForISFS(School[] schools)
         {
-            return "Not Implemented";
+           SchoolISFS meta = SchoolISFS.Create(schools);
+            var lookupConfigs = new List<LookUpConfig>
+            {
+                new LookUpConfig(new AuthorityISFS(), School.SchoolAuthorityIds(schools)),
+                new LookUpConfig(new SchoolDistrictISFS(), School.SchoolDistrictIds(schools))
+            };
+            var schoolLookUpForAuthorityAandDistrict = _loopupService.FetchLookUpByExternalId(lookupConfigs.ToArray());
+            var schoolLookUps = SchoolLookUpForISFS(meta);
+            schoolLookUps.Merge(schoolLookUpForAuthorityAandDistrict);
+            return this.UpdateV2(schools, meta, schoolLookUps);
         }
         public string GetData(D365Model model)
         {
@@ -99,6 +108,15 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 new IOSASInspcetionFundingGroup(),
                 new IOSASOwnerOperator(),
                 new IOSASTeam()
+            };
+            JObject result = _loopupService.FetchLookUpData(relations.ToArray());
+            return result;
+        }
+        private JObject SchoolLookUpForISFS(SchoolISFS meta)
+        {
+            var relations = new List<D365ModelMetdaData>
+            {
+                new ISFSFundingGroup()
             };
             JObject result = _loopupService.FetchLookUpData(relations.ToArray());
             return result;

@@ -34,8 +34,9 @@ namespace ECC.Institute.CRM.IntegrationAPI
                             var jsonResponse = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
                             JObject[] values = (jsonResponse.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
                                 .Select(item => (JObject)item).ToArray();
-                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {values}");
-                            result[meta.entityName] = JToken.FromObject(values);
+                            var valueJson = JToken.FromObject(values);
+                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {valueJson}");
+                            result[meta.entityName] = valueJson;
                         }
                         catch (Exception excp)
                         {
@@ -77,7 +78,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                             JObject[] values = (jsonResponse.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
                                 .Select(item => (JObject)item).ToArray();
 
-                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {values}");
+                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {jsonResponse}");
                             result[meta.entityName] = JToken.FromObject(values);
                         }
                         catch (Exception excp)
@@ -124,7 +125,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
 								var items = (jsonResponse.GetValue("value")?.ToArray() ?? new JToken[] {})
 									.Select(item => (JObject)item).ToArray();
 
-								_logger.LogInformation($"Lookup | {meta.tag} | ${lookup.tag} | itmes: {items}");
+								_logger.LogInformation($"Lookup | {meta.tag} | ${lookup.tag} | itmes: {jsonResponse}");
 								result[lookup.entityName] = JToken.FromObject(items);
                             }
                             catch (Exception excp)

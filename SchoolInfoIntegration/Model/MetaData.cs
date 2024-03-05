@@ -281,10 +281,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         {
             // Adding lookups
             // Authority
-            lookupsMetaData.Add(new SchoolAuthorityIOSAS());
-            lookupsMetaData.Add(new SchoolDistrictIOSAS());
-            lookupsMetaData.Add(new IOSASOwnerOperator());
-            lookupsMetaData.Add(new IOSASFundingGroup());
+            //lookupsMetaData.Add(new SchoolAuthorityIOSAS());
+            // lookupsMetaData.Add(new SchoolDistrictIOSAS());
+            // lookupsMetaData.Add(new IOSASOwnerOperator());
+            // lookupsMetaData.Add(new IOSASFundingGroup());
         }
 
         public static SchoolIOSAS Create(School[] input)

@@ -35,6 +35,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
     }
 
+    class ISFSFundingGroup : D365ModelMetdaData
+    {
+        public ISFSFundingGroup() : base("isfs_fundinggroup", "isfs_fundinggroups", "isfs_fundinggroupid", "isfs_name") { }
+    }
+
     // edu_school
     // edu_schoolauthority
     // edu_schooldistrict
@@ -61,6 +66,32 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             return model.ToISFS(this.lookUps);
         }
     }
+
+    public class AuthorityISFS : ISFSSModeledMetaData<SchoolAuthority>
+    {
+        // TableName: edu_schoolauthority
+        public AuthorityISFS() : base("isfs_authority", "isfs_authorities", "isfs_authorityid", "isfs_authorityno")
+        {
+
+        }
+
+        public static AuthorityISFS Create(SchoolAuthority[] input)
+        {
+            AuthorityISFS obj = new()
+            {
+                values = input
+            };
+
+            return obj;
+        }
+
+        public override JObject GetD365DataModel(D365Model model)
+        {
+            return (model is SchoolAuthority authority) ? authority.ISFS(this.lookUps) : model.ToIOSAS(this.lookUps);
+        }
+    }
+
+
 
     public class SchoolDistrictISFS: ISFSSModeledMetaData<SchoolDistrict>
     {
@@ -93,6 +124,31 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                     return null;
             }*/
             return null;
+        }
+
+        public override JObject GetD365DataModel(D365Model model)
+        {
+            return model.ToISFS(this.lookUps);
+        }
+    }
+
+    class SchoolISFS : ISFSSModeledMetaData<School>
+    {
+        public SchoolISFS() : base("edu_school", "edu_schools", "edu_schoolid", "edu_mincode")
+        {
+            // Adding lookups
+            // Authority
+            
+        }
+
+        public static SchoolISFS Create(School[] input)
+        {
+            SchoolISFS obj = new()
+            {
+                values = input
+            };
+
+            return obj;
         }
 
         public override JObject GetD365DataModel(D365Model model)

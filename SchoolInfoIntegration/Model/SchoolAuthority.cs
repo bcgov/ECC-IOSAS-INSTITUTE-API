@@ -61,7 +61,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("authorityNumber")]
         [Required]
-        public long? AuthorityNumber { get; set; }
+        public long AuthorityNumber { get; set; }
 
         [JsonPropertyName("faxNumber")]
         public string? FaxNumber { get; set; }
@@ -189,10 +189,56 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
             return result;
         }
-        public JObject ToISFS(JObject lookups)
+        public JObject ISFS(JObject lookups)
         {
             JObject result = new();
-                
+            result["isfs_authorityname"] = DisplayName;
+            result["isfs_authoritystatus"] = AuthorityStatus == "OPEN" ? true : false;
+            result["edu_externalid"] = this.IndependentAuthorityId;
+            result["isfs_email"] = Email;
+            result["isfs_authorityno"] = AuthorityNumber.ToString($"D3");
+            result["isfs_authoritytype"] = this.AuthorityTypeCode == "INDEPENDNT" ? 746910000 : 746910001; // 746910000:Independent 746910001: Offshore
+            result["isfs_email"] = Email;
+            result["isfs_fax"] = FaxNumber;
+            result["isfs_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd");
+            if (this.ClosedDate != null)
+            {
+                result["isfs_closedate"] = this.ClosedDate?.ToString("yyyy-MM-dd");// Format: yyyy-mm-dd 
+            }
+            // Physical Address Mapping
+            if (Address.getAddressWithType(AddressType.Physical.Value, this.Addresses) is var address && address != null)
+            {
+                result["isfs_addressline1"] = address.AddressLine1;
+                result["isfs_addressline2"] = address.AddressLine2;
+                result["isfs_addresscity"] = address.City;
+                result["isfs_addresspostalcode"] = address.Postal;
+                result["isfs_addressprovince"] = address.ProvinceCode;
+                result["isfs_addresscountry"] = address.CountryCode;
+            }
+            else if (Address.getAddressWithType(AddressType.Mailing.Value, this.Addresses) is var mailing && mailing != null)
+            {
+                result["isfs_addressline1"] = mailing.AddressLine1;
+                result["isfs_addressline2"] = mailing.AddressLine2;
+                result["isfs_addresscity"] = mailing.City;
+                result["isfs_addresspostalcode"] = mailing.Postal;
+                result["isfs_addressprovince"] = mailing.ProvinceCode;
+                result["isfs_addresscountry"] = mailing.CountryCode;
+            }
+            // Contact Mapping: Finding oldest Auth type contact
+            const string AuthTypeCode = "INDAUTHREP";
+            var authContacts = this.Contacts?.Where(contact => (contact.AuthorityContactTypeCode ?? $"") == AuthTypeCode).ToArray();
+            var sortedAuthContacts = authContacts?.OrderBy((contact) => contact.CreateDate).ToArray();
+            if (sortedAuthContacts?.Length > 0)
+            {
+                var contact = sortedAuthContacts[0];
+                result["isfs_maincontact"] = $"{contact.FirstName} {contact.LastName}";
+            }
+            return result;
+
+        }
+        public JObject ToISFS(JObject lookups)
+        {
+            JObject result = ToIOSAS(lookups);
             result["statecode"] = AuthorityStatus == "OPEN" ? 1 : 0;
             result["edu_externalid"] = this.IndependentAuthorityId;
             result.Remove("iosas_authoritystatus");

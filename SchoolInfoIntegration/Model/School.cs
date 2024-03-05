@@ -328,6 +328,91 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["iosas_principal"] = fullName != "" ? fullName : null;
             }
             // Funding grpup
+            if (GetFundingGroup(lookups, false) is var group && group != null)
+            {
+                result.Add(group);
+            }
+
+            return result;
+        }
+        public JObject ToISFS(JObject lookups)
+        {
+            /*var result = ToIOSAS(lookups);
+            result["edu_email"] = this.Email;
+            result.Remove("iosas_externalid");
+            result.Remove("iosas_email");
+            result.Remove("iosas_facilitytypeoffshore");
+            return result;*/
+            var result = new JObject();
+            string? authorityNumebr = GetAuthorityNumber(lookups);
+            // result["edu_schooldistrict"] = this.DistrictId; // TODO: Need mapping for district > find the code write
+            result["edu_name"] = this.DisplayName;
+            result["edu_schoolcode"] = this.SchoolNumber;
+            result["edu_mincode"] = this.Mincode;
+            //result["iosas_authority"] = this.IndependentAuthorityId; // TODO: Not getting Authority Number
+            result["edu_fax"] = this.FaxNumber;
+            result["edu_email"] = this.Email;
+            result["edu_phone"] = this.PhoneNumber;
+            result["edu_opendate"] = this.OpenedDate.ToString("yyyy-MM-dd");
+            result["edu_closedate"] = this.ClosedDate?.ToString("yyyy-MM-dd");
+            result["edu_website"] = this.Website;
+            result["edu_facilitytype"] = this.FacilityTypeCode == "STANDARD" ? 757500000 : 757500008; // Mapping: STANDARD: 757500000,  | ONLINE 757500008 |
+            result["edu_schoolcategory"] = 757500002;
+            result["edu_externalid"] = this.SchoolId;
+            result["isfs_authoritynumber"] = authorityNumebr;
+            // Required fields 
+
+            // Mail Address Mapping
+            if (this.Addresses?.Length > 0)
+            {
+                var address = this.Addresses[0];
+                result["edu_address1_line1"] = address.AddressLine1;
+                result["edu_address1_line2"] = address.AddressLine2;
+                result["edu_address1_city"] = address.City;
+                result["edu_address1_postalcode"] = address.Postal;
+                result["edu_address1_province"] = address.ProvinceCode;
+                result["edu_address1_country"] = address.CountryCode;
+            }
+            // Address Mapping
+            if (this.Addresses?.Length > 1)
+            {
+                var address = this.Addresses[1];
+                result["edu_address2_line1"] = address.AddressLine1;
+                result["edu_address2_line2"] = address.AddressLine2;
+                result["edu_address2_city"] = address.City;
+                result["edu_address2_postalcode"] = address.Postal;
+                result["edu_address2_province"] = address.ProvinceCode;
+                result["edu_address2_country"] = address.CountryCode;
+            }
+            // Authority
+            AuthorityISFS schoolAuthMeta = new();
+            AssignLookupKeyUsingExternalId(schoolAuthMeta, lookups, IndependentAuthorityId, "isfs_Authority", result);
+            // School District
+            SchoolDistrictISFS schoolDistrictMeta = new();
+            AssignLookupKeyUsingExternalId(schoolDistrictMeta, lookups, DistrictId, "edu_SchoolDistrict", result);
+
+            // Handling Lookups
+            // (School group)  => iosas_inspectionfundinggroup.iosas_facilitycode == 8
+            // Funding Group => iosas_fundinggroups.iosas_name == concat("Group " + data.SchoolFundingGroup)
+            // Owner filter owners iosas_owneroperators.teamtype == 0 and
+            // (iosas_owneroperators.name [In Independent Schools Branch, Offshore School Program] => iosas_owneroperators. */
+
+            // Owner operator if Non offsore school
+            //  check DL school facility type DIST_LEARN/8 => 
+            // Funding Group is not available
+            // Owner operator id : fetch and save id for independent school user selected owner operator id
+            // Rules to select owner operator id:
+            //  1. For offsore school select operator for iosas_owneroperators.iosas_owneroperatornumber == data.AuthorityNumber for Offsore school
+            // bind key: iosas_owneroperators
+
+            // Update Principal
+            if (GetPrincipal() is var pricipal && pricipal != null)
+            {
+                string fullName = pricipal.LastName != null ? $"{pricipal.FirstName ?? ""} ${pricipal.LastName}" : $"{pricipal.FirstName ?? ""}";
+                result["isfs_schoolprincipal"] = fullName != "" ? fullName : null;
+            }
+
+            // Funding grpup
             if (GetFundingGroup(lookups) is var group && group != null)
             {
                 result.Add(group);
@@ -346,14 +431,14 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 .ToArray();
             return authorities?.Length > 0 ? authorities[0]?.GetValue(meta.businessKey)?.ToString() : null;
         }
-        private JProperty? GetFundingGroup(JObject lookup)
+        private JProperty? GetFundingGroup(JObject lookup, Boolean isIOSAS = true)
         {
             if (this.SchoolFundingGroup == null)
             {
                 return null;
             }
             string groupName = $"Group {SchoolFundingGroup}";
-            IOSASFundingGroup meta = new();
+            D365ModelMetdaData meta = isIOSAS ? new IOSASFundingGroup() : new ISFSFundingGroup();
             System.Console.WriteLine($"GetFundingGroup => {lookup[meta.entityName]?.ToString()}");
             JObject[]? fundingGroups = lookup[meta.entityName]?
                 .ToArray()
@@ -367,7 +452,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 idKey != null
                 )
             {
-                return new JProperty("iosas_fundinggroup@odata.bind", $"{meta.entityName}({idKey})");
+                return isIOSAS ? new JProperty("iosas_fundinggroup@odata.bind", $"{meta.entityName}({idKey})") :
+                    new JProperty("isfs_FundingGroup@odata.bind", $"{meta.entityName}({idKey})");
             }
             return null;
 
@@ -396,16 +482,6 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                    .ToArray();
             return items?.Length > 0 ? items[0]?.GetValue(idKey)?.ToString() : null;
         }
-        public JObject ToISFS(JObject lookups)
-        {
-            var result = ToIOSAS(lookups);
-            result["edu_email"] = this.Email;
-            result.Remove("iosas_externalid");
-            result.Remove("iosas_email");
-            result.Remove("iosas_facilitytypeoffshore");
-            return result;
-        }
-
         public string UpsertQuery()
         {
 
