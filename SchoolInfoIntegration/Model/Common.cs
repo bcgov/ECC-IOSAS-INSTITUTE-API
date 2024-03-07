@@ -28,6 +28,18 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public JObject ToISFS();
     }
 
+    public class D365ImportBase: ID365ImportModel
+    {
+        public virtual JObject ToIOSAS()
+        {
+            return new();
+        }
+        public virtual JObject ToISFS()
+        {
+            return new();
+        }
+    }
+
     public class D365ModelUtility
     {
         /*public static JObject[] ToJSONArray(D365Model[] items)

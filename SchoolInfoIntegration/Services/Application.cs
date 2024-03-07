@@ -48,6 +48,14 @@ namespace ECC.Institute.CRM.IntegrationAPI
             _loopupService = new LookUpService(_d365webapiservice, logger);
         }
 
+        public LookUpService LookUpSevice
+        {
+            get
+            {
+                return _loopupService;
+            }
+        }
+
         public string DistrictUpsertIOSAS(SchoolDistrict[] districts)
         {
             SchoolDistrictIOSAS meta = SchoolDistrictIOSAS.Create(districts);
@@ -84,7 +92,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
         }
         public string SchoolUpsertForISFS(School[] schools)
         {
-           SchoolISFS meta = SchoolISFS.Create(schools);
+            SchoolISFS meta = SchoolISFS.Create(schools);
             var lookupConfigs = new List<LookUpConfig>
             {
                 new LookUpConfig(new AuthorityISFS(), School.SchoolAuthorityIds(schools)),
@@ -184,7 +192,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
         {
             return JObject.Parse(json).GetValue("value")?.ToArray()?.Select(token => (JObject)token).ToArray();
         }
-        private JObject[]? FilterByExternalId(D365ModelMetdaData meta, string value)
+        public JObject[]? FilterByExternalId(D365ModelMetdaData meta, string value)
         {
             var query = meta.FilterAndSelectQueryOnExternalId(value);
             _logger.LogInformation($"FilterByExternalId: Will Filter Data using extern Query: {query}");
@@ -203,10 +211,32 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
 
         }
+
+        public JObject[]? FilterByBusiness(D365ModelMetdaData meta, string value)
+        {
+
+            // Data with external id not available go with default key
+            var query = meta.FilterAndSelectQuery(value);
+            _logger.LogInformation($"Filter | ${meta.tag} | Will Filter Data using Query(legacy): {query}");
+            var response = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
+            if (response.IsSuccessStatusCode)
+            {
+                return CovertToValueArray(response.Content.ReadAsStringAsync().Result);
+            }
+            else
+            {
+                var excpMessage = $"Filter | {meta.tag}|{value}) | Fail | {ResponseDescription(response)}";
+                _logger.LogInformation(excpMessage);
+                throw new Exception(excpMessage);
+            }
+
+        }
+
         public JObject[]? Filter(D365ModelMetdaData meta, D365Model model)
         {
             // Try to get filter by external id
-            var reseultByExternalId = FilterByExternalId(meta, model.ExternalId());
+            JObject[]? reseultByExternalId = FilterByExternalId(meta, model.ExternalId());
+
             if (reseultByExternalId != null && reseultByExternalId.Length > 0)
             {
                 return reseultByExternalId;
@@ -218,13 +248,14 @@ namespace ECC.Institute.CRM.IntegrationAPI
             if (response.IsSuccessStatusCode)
             {
                 return CovertToValueArray(response.Content.ReadAsStringAsync().Result);
-            } else
+            }
+            else
             {
                 var excpMessage = $"Filter | {meta.tag}({model.KeyValue()}) | Fail | {ResponseDescription(response)}";
                 _logger.LogInformation(excpMessage);
                 throw new Exception(excpMessage);
             }
-            
+
         }
         private string UpdateV2(D365Model[] items, D365ModelMetdaData meta, JObject inputLookUps)
         {
@@ -257,14 +288,15 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 try
                 {
                     existingObjects = Filter(meta, model);
-                } catch (Exception excp)
+                }
+                catch (Exception excp)
                 {
                     status["filter_issue"] = excp.Message;
                 }
                 if (existingObjects != null && existingObjects.Length > 0)
                 {
                     _logger.LogInformation($"UpdateV2 | {meta.tag}({model.KeyDisplay()}) | Existing value \n {existingObjects}");
-                    
+
                     status["existings"] = JArray.FromObject(existingObjects);
 
                     try
@@ -285,7 +317,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         .Where(value => value != null && value != "")
                         .ToArray();
 
-                    } catch
+                    }
+                    catch
                     {
                         ids = new string[] { };
                         errors.Add("Existing verification fail");
@@ -293,8 +326,9 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         statuses.Add(status);
                         continue;
                     }
-                    
-                } else
+
+                }
+                else
                 {
                     _logger.LogInformation($"UpdateV2 |  {meta.tag}({model.KeyDisplay()}) | No existing value create");
                     ids = new string[] { };
@@ -310,14 +344,16 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         status["action"] = "update";
                         status["existing-ids"] = JArray.FromObject(ids);
                         resp = this.UpdateAtomic(model, meta, ids);
-                    } else
+                    }
+                    else
                     {
                         _logger.LogInformation($"UpdateV2 |  {meta.tag}({model.KeyDisplay()}) | Will create");
                         status["action"] = "create";
                         resp = this.CreateAtomic(model, meta);
                     }
                     status["status"] = "success";
-                } catch (Exception excp)
+                }
+                catch (Exception excp)
                 {
                     status["status"] = "error";
                     status["error"] = excp.Message;
@@ -349,7 +385,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             _logger.LogInformation($"UpdateAtomic | D365 | {meta.tag} | Request {body}");
             foreach (string id in existings)
             {
-                
+
                 var resp = _d365webapiservice.SendUpdateRequestAsync(meta.IdQuery(id), body);
                 var marker = $"UpdateAtomic | {meta.tag} | [{id}/ {model.KeyValue()}]";
                 if (resp.IsSuccessStatusCode)
@@ -381,7 +417,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
             {
                 _logger.LogInformation($"{marker} | Success | {ResponseDescription(resp)}");
                 return $"{marker} | Success | {ResponseDescription(resp)}";
-            } else
+            }
+            else
             {
                 _logger.LogInformation($"{marker} | Fail | {ResponseDescription(resp)}");
                 throw new Exception($"{marker} | Fail | {ResponseDescription(resp)} | body | {json}");

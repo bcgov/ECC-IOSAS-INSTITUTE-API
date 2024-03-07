@@ -103,6 +103,36 @@ namespace ECC.Institute.CRM.IntegrationAPI
             result["errors"] = errors;
             return result;
 		}
+        public JObject[]? FetchLookupValues(D365ModelMetdaData meta, string[] values)
+        {
+            var query = meta.FilterAndSelectLookUpQuery(values);
+            _logger.LogInformation($"Lookup | {meta.tag} | Will Fetch data with query => {query}");
+            var resp = _d365webapiservice.SendMessageAsync(HttpMethod.Get, query);
+            if (resp.IsSuccessStatusCode)
+            {
+                try
+                {
+                    var jsonResponse = JObject.Parse(resp.Content.ReadAsStringAsync().Result);
+                    JObject[]? items = (jsonResponse.GetValue("value")?.ToArray() ?? new JToken[] { })
+                        .Select(item => (JObject)item).ToArray();
+
+                    //_logger.LogInformation($"Lookup | FetchLookupValues | {meta.tag} | itmes: {jsonResponse}");
+                    return items ?? new JObject[] { };
+                    
+                }
+                catch (Exception excp)
+                {
+                    _logger.LogInformation($"Lookup | FetchLookupValues| {meta.tag} | Error: {excp.Message}");
+                    throw new Exception(excp.Message);
+                }
+
+            } else
+            {
+                var error = D365ModelUtility.ResponseDescription(resp);
+                _logger.LogInformation($"Lookup | {meta.tag}: HTTP Error: ${resp}");
+            }
+            return null;
+        }
 		public JObject FetchLookUpValues(D365ModelMetdaData meta)
 		{
 			JObject result = new();

@@ -109,7 +109,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             HttpRequestMessage message = new(httpMethod, messageUri);
             message.Headers.Add("Prefer", "odata.include-annotations=OData.Community.Display.V1.FormattedValue");
             var client = _authenticationService.GetHttpClient(Application).Result;
-           
+
 
             // Send the message to the WebAPI. 
             return client.SendAsync(message).Result;
@@ -126,10 +126,10 @@ namespace ECC.Institute.CRM.IntegrationAPI
             return httpClient.SendAsync(message).Result;
         }
 
-        
+
         private HttpResponseMessage SendAsync(HttpMethod operation, string endPoint, string body)
         {
-            var message = new HttpRequestMessage(operation, endPoint)  ;
+            var message = new HttpRequestMessage(operation, endPoint);
             message.Content = new StringContent(body, Encoding.UTF8, "application/json");
             message.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json");
 

@@ -5,7 +5,9 @@ using System.Net;
 using static System.Net.Mime.MediaTypeNames;
 using ECC.Institute.CRM.IntegrationAPI.Model;
 using ECC.Institute.CRM.IntegrationAPI.Filters;
-
+using CsvHelper;
+using System.Globalization;
+using System.Text;
 namespace ECC.Institute.CRM.IntegrationAPI.Controllers
 {
     [Route("api/[controller]")]
@@ -16,13 +18,29 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         private readonly ID365WebAPIService _d365webapiservice;
         private readonly ILogger<SchoolController> _logger;
         private readonly IAuthoritiesService _authorityService;
+        static ImpoterService? iosasServic;
+        static ImpoterService? isfsService;
 
         public SchoolController(ID365WebAPIService d365webapiservice, ILogger<SchoolController> logger, IAuthoritiesService authoritiesService)
         {
             _d365webapiservice = d365webapiservice ?? throw new ArgumentNullException(nameof(d365webapiservice));
             _logger = logger;
             _authorityService = authoritiesService;
+            //_iosasService = ImporterFactory.Create(d365webapiservice, "iosas", _logger);
+            //_isfsService = ImporterFactory.Create(d365webapiservice, "isfs", _logger);
+        }
 
+        private ImpoterService getService(string applicationName)
+        {
+            if (SchoolController.isfsService == null)
+            {
+                SchoolController.isfsService = ImporterFactory.Create(_d365webapiservice, "isfs", _logger);
+            }
+            if (SchoolController.iosasServic == null)
+            {
+                SchoolController.iosasServic = ImporterFactory.Create(_d365webapiservice, "isfs", _logger);
+            }
+            return applicationName == "isfs" ? SchoolController.isfsService : SchoolController.iosasServic;
         }
 
         [HttpPost("{applicationName}/AuthorityUpsert")]
@@ -113,13 +131,61 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
-        [HttpGet("lookup/{applicationName}/{entityName}")]
-        public ActionResult<string> LookUp([FromRoute] string applicationName, [FromRoute] string entityName)
+        [HttpPost("/import/{applicationName}/{entityName}")]
+        public ActionResult<string> Import([FromRoute] string applicationName, [FromRoute] string entityName, IFormFile file, Boolean isVerifyOnly = true)
         {
             try
             {
-                return Ok("OK");
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest("Upload a csv file");
+                }
+                using (var stream = new StreamReader(file.OpenReadStream()))
+                using(var csv = new CsvReader(stream, CultureInfo.InvariantCulture))
+                {
+                    ImpoterService service = getService(applicationName);
+                    if (service.isRunning)
+                    {
+                        return Ok(service.TaskStatus());
+                    }
+                    return Ok(service.ExternalIdImport(applicationName, entityName, csv, isVerifyOnly));
+                }
+                    
             } catch (Exception excp)
+            {
+                return StatusCode(500, excp.Message);
+            }
+        }
+
+        [HttpGet("/import/{applicationName}/status")]
+        public ActionResult<string> ImportStatus([FromRoute] string applicationName)
+        {
+            return Ok(getService(applicationName).TaskStatus());
+        }
+        [HttpPost("/verify/{applicationName}/{entityName}")]
+        public IActionResult Verify([FromRoute] string applicationName, [FromRoute] string entityName, IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest("Upload a csv file");
+                }
+                using (var stream = new StreamReader(file.OpenReadStream()))
+                using (var csv = new CsvReader(stream, CultureInfo.InvariantCulture))
+                {
+                    ImpoterService service = getService(applicationName);
+                    if (service.isRunning)
+                    {
+                        return Ok(service.TaskStatus());
+                    }
+                    string report = service.Verify(applicationName, entityName, csv);
+                    var byteArray = Encoding.ASCII.GetBytes(report);
+                    return File(byteArray, "text/csv", $"report-{applicationName}-{entityName}.csv");
+                }
+
+            }
+            catch (Exception excp)
             {
                 return StatusCode(500, excp.Message);
             }

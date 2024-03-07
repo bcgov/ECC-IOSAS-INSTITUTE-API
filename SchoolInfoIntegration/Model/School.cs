@@ -4,9 +4,43 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
+    public class SchoolImport: D365ImportBase
+    {
+        public string Mincode;
+        public string SchoolId;
+
+        public override JObject ToIOSAS()
+        {
+            SchoolIOSAS meta = new();
+            return new JObject
+            {
+                new JProperty(meta.businessKey, Mincode),
+                new JProperty(meta.externalIdKey, SchoolId)
+            };
+        }
+        public override JObject ToISFS()
+        {
+            SchoolIOSAS meta = new();
+            return new JObject
+            {
+                new JProperty(meta.businessKey, Mincode),
+                new JProperty(meta.externalIdKey, SchoolId)
+            };
+        }
+    }
+    public class SchoolMapper : ClassMap<SchoolImport>
+    {
+        public SchoolMapper()
+        {
+            Map(school => school.SchoolId).Name("school_id");
+            Map(school => school.Mincode).Name("mincode");
+        }
+    }
+
     public class Principal
     {
         [JsonPropertyName("firstName")]

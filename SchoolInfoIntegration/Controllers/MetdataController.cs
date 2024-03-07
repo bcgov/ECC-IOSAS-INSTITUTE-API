@@ -157,7 +157,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpGet("GetPickListValues/{applicationName}/{tableName}")]
-        public ActionResult<string> GetPickListValues([FromRoute] string applicationName,[FromRoute] string tableName)
+        public ActionResult<string> GetPickListValues([FromRoute] string applicationName, [FromRoute] string tableName)
         {
             if (string.IsNullOrEmpty(tableName))
                 return BadRequest("Invalid Request - tableName is required");
@@ -193,7 +193,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             List<JObject> items = new();
             if (values.Length > 0)
             {
-                foreach(JObject des in values)
+                foreach (JObject des in values)
                 {
                     JObject item = new();
                     item["field_name"] = des["LogicalName"] ?? "NA";
@@ -203,7 +203,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                     if (options.Length > 0)
                     {
                         List<JObject> fieldOtionValues = new();
-                        foreach(JObject option in options)
+                        foreach (JObject option in options)
                         {
                             JObject fieldOption = new();
                             fieldOption["value"] = option["Value"] ?? "NA";
@@ -214,7 +214,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                             fieldOtionValues.Add(fieldOption);
                         }
                         item["options"] = JToken.FromObject(fieldOtionValues.ToArray());
-                    } else
+                    }
+                    else
                     {
                         item["options"] = JToken.FromObject(Array.Empty<JObject>());
                         item["remarks"] = "No option values";
@@ -227,7 +228,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         }
 
         [HttpGet("GetFieldDescritions")]
-        public ActionResult<string> GetFieldDescritions(string applicationName,string tableName)
+        public ActionResult<string> GetFieldDescritions(string applicationName, string tableName)
         {
             if (string.IsNullOrEmpty(tableName))
                 return BadRequest("Invalid Request - tableName is required");
@@ -315,8 +316,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             }
             else
                 System.Console.WriteLine($"Response error: {response.StatusCode}, {response.ReasonPhrase} | {response.Content.ReadAsStringAsync().Result} | URI: {response.RequestMessage?.RequestUri} ");
-                return StatusCode((int)response.StatusCode,
-                    $"Failed to Retrieve records: {response.ReasonPhrase}");
+            return StatusCode((int)response.StatusCode,
+                $"Failed to Retrieve records: {response.ReasonPhrase}");
         }
 
         [HttpGet("GetFilteredData")]

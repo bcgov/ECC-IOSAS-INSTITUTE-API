@@ -4,9 +4,42 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.ComponentModel.DataAnnotations;
+using CsvHelper.Configuration;
 
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
+    public class SchoolDistrictImport: D365ImportBase
+    {
+        public string DistrictId;
+        public long DistrictNumber;
+
+        public override JObject ToIOSAS()
+        {
+            SchoolDistrictIOSAS meta = new();
+            return new JObject
+            {
+                new JProperty(meta.businessKey, DistrictNumber.ToString($"D3")),
+                new JProperty(meta.externalIdKey, DistrictId)
+            };
+        }
+        public override JObject ToISFS()
+        {
+            SchoolDistrictISFS meta = new();
+            return new JObject
+            {
+                new JProperty(meta.businessKey, DistrictNumber.ToString($"D3")),
+                new JProperty(meta.externalIdKey, DistrictId)
+            };
+        }
+    }
+    public class SchoolDistrictMapper : ClassMap<SchoolDistrictImport>
+    {
+        public SchoolDistrictMapper()
+        {
+            Map(district => district.DistrictId).Name("district_id");
+            Map(district => district.DistrictNumber).Name("district_number");  
+        }
+    }
     public class SchoolDistrict: D365Model
     {
         [JsonPropertyName("createUser")]

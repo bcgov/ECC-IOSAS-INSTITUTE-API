@@ -11,13 +11,15 @@ using CsvHelper.Configuration;
     */
 namespace ECC.Institute.CRM.IntegrationAPI.Model
 {
-    public class SchoolAuthorityImport: ID365ImportModel
+    public class SchoolAuthorityImport: D365ImportBase
     {
         public string AuthorityId;
         public long AuthorityNumber;
         public string Name;
+        public string OpenDate;
+        public string CloseDate;
 
-        public JObject ToIOSAS()
+        public override JObject ToIOSAS()
         {
             return new JObject
             {
@@ -25,9 +27,13 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 new JProperty("iosas_externalid", AuthorityId)
             };
         }
-        public JObject ToISFS()
+        public override JObject ToISFS()
         {
-            return new();
+            return new()
+            {
+                new JProperty("isfs_authorityno", AuthorityNumber.ToString($"D3")),
+                new JProperty("edu_externalid", AuthorityId)
+            };
         }
     }
     public class AuthorityMapper: ClassMap<SchoolAuthorityImport>
@@ -37,6 +43,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             Map(authority => authority.AuthorityId).Name("independent_authority_id");
             Map(authority => authority.AuthorityNumber).Name("authority_number");
             Map(authority => authority.Name).Name("display_name");
+            Map(authority => authority.OpenDate).Name("opened_date");
+            Map(authority => authority.CloseDate).Name("closed_date");
         }
     }
     public partial class SchoolAuthority: D365Model
