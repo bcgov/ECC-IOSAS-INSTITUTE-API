@@ -151,7 +151,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string FilterAndSelectLookUpQuery(string[] values)
         {
             var finalValues = values.Select(value => $"'{value}'");
-            return $"{entityName}?$select={SelectStatement()},{primaryKey}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{businessKey}',PropertyValues=[{string.Join(",",finalValues)}])";
+            return $"{entityName}?$select={SelectStatement()}&$filter=Microsoft.Dynamics.CRM.In(PropertyName='{businessKey}',PropertyValues=[{string.Join(",",finalValues)}])";
         }
         public string FilterAndSeclecQueryByExternalIds(string[] externalIds)
         {
@@ -174,6 +174,10 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public virtual JObject GetD365DataModel(D365Model model)
         {
             return new JObject();
+        }
+        public override string ToString()
+        {
+            return $"{GetType()}:{entityName}/{businessKey}/{primaryKey}/{externalIdKey}";
         }
     }
 

@@ -38,7 +38,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             }
             if (SchoolController.iosasServic == null)
             {
-                SchoolController.iosasServic = ImporterFactory.Create(_d365webapiservice, "isfs", _logger);
+                SchoolController.iosasServic = ImporterFactory.Create(_d365webapiservice, "iosas", _logger);
             }
             return applicationName == "isfs" ? SchoolController.isfsService : SchoolController.iosasServic;
         }

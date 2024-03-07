@@ -129,7 +129,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             } else
             {
                 var error = D365ModelUtility.ResponseDescription(resp);
-                _logger.LogInformation($"Lookup | {meta.tag}: HTTP Error: ${resp}");
+                _logger.LogInformation($"Lookup | {meta.tag}: HTTP Error: ${error}");
             }
             return null;
         }

@@ -88,7 +88,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             AuthorityISFS saISFS = new();
             _AddConfig(saISFS, isfs);
             _AddHandler(saISFS, isfs, (csv, app) => { return HanldeSchoolAuthority(csv, app); });
-            SchoolAuthorityISFS saIOSAS = new();
+            SchoolAuthorityIOSAS saIOSAS = new();
             _AddConfig(saIOSAS, iosas);
             _AddHandler(saIOSAS, iosas, (csv, app) => { return HanldeSchoolAuthority(csv, app); });
             SchoolDistrictISFS sdISFS = new();
@@ -178,7 +178,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
         private string StatusReport(D365ModelMetdaData meta)
         {
             StringWriter stringBuilder = new();
-            stringBuilder.GetStringBuilder().AppendLine($"index,{meta.businessKey},{meta.primaryKey},{ExternStatusKey},d365,report,comment");
+            stringBuilder.GetStringBuilder().AppendLine($"index,{meta.businessKey},{meta.primaryKey},{ExternStatusKey},d365,report,existing_d365_ids,duplicate_count,comment,no_match_ids");
             foreach(JObject status in statuses)
             {
                 string index = status["index"]?.ToString() ?? "NA";
@@ -188,7 +188,10 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 string report = status["report"]?.ToString() ?? $"{true}";
                 string d365 = status["d365"]?.ToString() ?? $"{false}";
                 string comment = status["comment"]?.ToString() ?? "NA";
-                stringBuilder.GetStringBuilder().AppendLine($"{index},{bvalue},{pValue},{eValue},{d365},{report},{comment}");
+                string d65ids = status["existing_d365_ids"]?.ToString() ?? "NA";
+                string noMatchIds = status["d365_no_match_ids"]?.ToString() ?? "NA";
+                string duplicateCount = status["duplicate_count"]?.ToString() ?? "NA";
+                stringBuilder.GetStringBuilder().AppendLine($"{index},{bvalue},{pValue},{eValue},{d365},{report},{d65ids},{duplicateCount},{comment},{noMatchIds}");
             }
             return stringBuilder.GetStringBuilder().ToString();
         }
@@ -305,14 +308,19 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         status["matchedObjects"] = JToken.FromObject(haveExternalIds);
                         status[ExternStatusKey] = selected[0].GetValue(meta.externalIdKey);
                         status[meta.primaryKey] = selected[0].GetValue(meta.primaryKey);
-                        _logger.LogInformation($"ExternalIdImport: {businessValue}: Selected: {JToken.FromObject(selected)}");
+                        string[] selectedIds = selected.Select(item => item.GetValue(meta.primaryKey)?.ToString() ?? "").Where(str => str != "").ToArray();
+                        status["existing_d365_ids"] = string.Join("|", selectedIds);
+                        status["duplicate_count"] = selected.Length - 1;
+                        _logger.LogInformation($"ExternalIdImport: {businessValue}({externId}): Selected: {JToken.FromObject(selected)}");
                         if (noOrWrongExternalIds.Length > 0)
                         {
+                            _logger.LogInformation($"ExternalIdImport: {businessValue}({externId}): Wrong: {JToken.FromObject(noOrWrongExternalIds)}");
                             status["no-match"] = JToken.FromObject(noOrWrongExternalIds);
                             status["updated"] = false;
                             status["d365"] = false;
                             string[] existingIds = noOrWrongExternalIds.Select(item => item.GetValue(meta.primaryKey)?.ToString() ?? "").Where(str => str != "").ToArray();
                             status["d365-id"] = existingIds.Length > 0 ? existingIds[0] : null;
+                            status["d365_no_match_ids"] = string.Join("|", existingIds);
                             // Update here
                             if (verifyOnly == false && existingIds.Length > 0)
                             {
@@ -332,7 +340,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                                     status["update-status"] = "fail";
                                     status["report"] = true;
                                     status["updated"] = false;
-                                    status["comment"] = $"ExternalIdImport: No external id found. Error happens during update: {exp.Message}";
+                                    status["comment"] = $"ExternalIdImport: No external id found for {meta.businessKey}={businessValue}({externId}). Error happens during update: {exp.Message}";
                                     _logger.LogError($"ExternalIdImport: Export fail {businessValue}({externId}): {exp.Message}");
                                 }
 
@@ -350,7 +358,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                     } else
                     {
                         _logger.LogInformation($"ExternalIdImport: Unable to find D365 object from {meta.businessKey}={businessValue}[{externId}]");
-                        status["comment"] = $"No in D365 item for value {meta.businessKey}={businessValue}({externId})";
+                        status["comment"] = $"No D365 record found for value {meta.businessKey}={businessValue}({externId})";
                         status["existings"] = null;
                         status["report"] = true;
                         status["updated"] = false;
@@ -407,7 +415,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                     List<JObject> list = handler(reader, applicationName);
                     mainList = list;
                     D365ModelMetdaData meta = config.Meta;
-                    _logger.LogInformation($"ExternalIdImport: Will process data: {list.Count}");
+                    _logger.LogInformation($"ExternalIdImport: Will process data: {list.Count}: {key}: {meta}");
                     return StartVerify(meta, key);
                 }
                 throw new Exception($"Unable to find config for application:{applicationName}, entity:{entityName}");
