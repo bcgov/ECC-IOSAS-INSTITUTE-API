@@ -50,6 +50,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
         int currentIndex = -1;
         public Boolean isFinished = false;
         public Boolean isRunning = false;
+        private string _StatusReport = "";
+        static string ExternStatusKey = "d365_extern_key";
 
         private readonly Dictionary<string, Func<CsvReader, string, List<JObject>>> _importHandle = new();
         private void _AddConfig(D365ModelMetdaData meta, string app)
@@ -125,6 +127,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             currentJobEndTime = null;
             emptyAtD365 = new();
             errors = new();
+            _StatusReport = ""; 
             _Clean();
         }
         private void _Clean()
@@ -162,10 +165,12 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         _logger.LogError(message);
                         errors.Add(message);
                     }
-                    Thread.Sleep(2000);
+                    Thread.Sleep(1000);
+                    _StatusReport = StatusReport(meta);
                 }
                 // Clean
                 currentJobEndTime = DateTime.Now;
+                _StatusReport = StatusReport(meta);
                 _Clean();
                 _logger.LogInformation($"ExternalIdImport: [Finished]");
             });
@@ -173,19 +178,23 @@ namespace ECC.Institute.CRM.IntegrationAPI
         private string StatusReport(D365ModelMetdaData meta)
         {
             StringWriter stringBuilder = new();
-            stringBuilder.GetStringBuilder().AppendLine($"index,{meta.businessKey},{meta.primaryKey},{meta.externalIdKey},d365,report,comment");
+            stringBuilder.GetStringBuilder().AppendLine($"index,{meta.businessKey},{meta.primaryKey},{ExternStatusKey},d365,report,comment");
             foreach(JObject status in statuses)
             {
                 string index = status["index"]?.ToString() ?? "NA";
                 string bvalue = status[meta.businessKey]?.ToString() ?? "NA";
                 string pValue = status[meta.primaryKey]?.ToString() ?? "NA";
-                string eValue = status[meta.externalIdKey]?.ToString() ?? "NA";
+                string eValue = status[ExternStatusKey]?.ToString() ?? "NA";
                 string report = status["report"]?.ToString() ?? $"{true}";
                 string d365 = status["d365"]?.ToString() ?? $"{false}";
                 string comment = status["comment"]?.ToString() ?? "NA";
                 stringBuilder.GetStringBuilder().AppendLine($"{index},{bvalue},{pValue},{eValue},{d365},{report},{comment}");
             }
             return stringBuilder.GetStringBuilder().ToString();
+        }
+        public string ImportReport()
+        {
+            return _StatusReport;
         }
         private string StartVerify(D365ModelMetdaData meta, string key)
         {
@@ -286,6 +295,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                     businessValue != null)
                 {
                     // Find key and value
+                    
                     JObject[] selected = allD365.Where(d365 => d365[meta.businessKey]?.ToString() == businessValue).ToArray();
                     if (selected.Length > 0)
                     {
@@ -293,7 +303,9 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         JObject[] noOrWrongExternalIds = selected.Where(d365 => d365[meta.externalIdKey]?.ToString() != externId || d365[meta.externalIdKey] == null).ToArray();
                         status["existings"] = JToken.FromObject(selected);
                         status["matchedObjects"] = JToken.FromObject(haveExternalIds);
+                        status[ExternStatusKey] = selected[0].GetValue(meta.externalIdKey);
                         status[meta.primaryKey] = selected[0].GetValue(meta.primaryKey);
+                        _logger.LogInformation($"ExternalIdImport: {businessValue}: Selected: {JToken.FromObject(selected)}");
                         if (noOrWrongExternalIds.Length > 0)
                         {
                             status["no-match"] = JToken.FromObject(noOrWrongExternalIds);
@@ -337,8 +349,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         }
                     } else
                     {
-                        _logger.LogInformation($"ExternalIdImport: Unable to find D365 object from {meta.businessKey}{businessValue}[{externId}]");
-                        status["comment"] = $"No D365 item for value {meta.businessKey}={businessValue}({externId})";
+                        _logger.LogInformation($"ExternalIdImport: Unable to find D365 object from {meta.businessKey}={businessValue}[{externId}]");
+                        status["comment"] = $"No in D365 item for value {meta.businessKey}={businessValue}({externId})";
                         status["existings"] = null;
                         status["report"] = true;
                         status["updated"] = false;
@@ -347,8 +359,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 }
                 else
                 {
-                    status["wrong-data-comment"] = $"Unable to find external id {meta.externalIdKey} in record or buisness key: {meta.businessKey}";
-                    _logger.LogInformation($"ExternalIdImport {key}: No external id in {obj}");
+                    status["comment"] = $"Unable to find external id {meta.externalIdKey} in record or buisness key: {meta.businessKey}";
+                    _logger.LogInformation($"ExternalIdImport {key}: No external id in {obj} {meta.businessKey} {meta.externalIdKey}");
                 }
                 statuses.Add(status);
             }

@@ -162,6 +162,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
         {
             return Ok(getService(applicationName).TaskStatus());
         }
+        [HttpGet("/import/{applicationName}/report")]
+        public IActionResult ImportReport([FromRoute] string applicationName)
+        {
+            string report = getService(applicationName).ImportReport();
+            return GetCSVFile(report, $"status-report-{applicationName}");
+        }
         [HttpPost("/verify/{applicationName}/{entityName}")]
         public IActionResult Verify([FromRoute] string applicationName, [FromRoute] string entityName, IFormFile file)
         {
@@ -180,8 +186,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                         return Ok(service.TaskStatus());
                     }
                     string report = service.Verify(applicationName, entityName, csv);
-                    var byteArray = Encoding.ASCII.GetBytes(report);
-                    return File(byteArray, "text/csv", $"report-{applicationName}-{entityName}.csv");
+                    return GetCSVFile(report, $"report-{applicationName}-{entityName}");
                 }
 
             }
@@ -189,6 +194,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
             {
                 return StatusCode(500, excp.Message);
             }
+        }
+        private IActionResult GetCSVFile(string content, string name)
+        {
+            var byteArray = Encoding.ASCII.GetBytes(content);
+            return File(byteArray, "text/csv", $"{name}.csv");
         }
     }
 }

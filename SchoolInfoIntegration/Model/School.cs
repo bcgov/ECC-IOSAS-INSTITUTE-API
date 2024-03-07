@@ -24,7 +24,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         }
         public override JObject ToISFS()
         {
-            SchoolIOSAS meta = new();
+            SchoolISFS meta = new();
             return new JObject
             {
                 new JProperty(meta.businessKey, Mincode),
