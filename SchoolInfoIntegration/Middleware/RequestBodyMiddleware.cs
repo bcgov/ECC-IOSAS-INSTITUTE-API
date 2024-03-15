@@ -9,10 +9,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Middleware
 	public class RequestBodyMiddleware
 	{
         private readonly RequestDelegate _next;
+        private readonly ILogger<RequestBodyMiddleware> _logger;
 
-        public RequestBodyMiddleware(RequestDelegate next)
+        public RequestBodyMiddleware(RequestDelegate next, ILogger<RequestBodyMiddleware> logger)
         {
             _next = next;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -25,7 +27,8 @@ namespace ECC.Institute.CRM.IntegrationAPI.Middleware
             var print = bodyAsText == "" ? "None" : bodyAsText;
 
             // Print the raw request body
-            Console.WriteLine($"Raw Http Request:[{context.Request.Method}] {context.Request.Path} | body:{print}");
+            _logger.LogInformation($"Raw Http Request:[{context.Request.Method}] {context.Request.Path}");
+            Console.WriteLine($"RequestBodyMiddleware: Raw Http Request:[{context.Request.Method}] {context.Request.Path} | body:{print}");
 
             // Important: reset the request body stream position to the beginning
             context.Request.Body.Position = 0;

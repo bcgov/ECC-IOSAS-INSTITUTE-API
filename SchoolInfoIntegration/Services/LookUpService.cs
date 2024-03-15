@@ -35,7 +35,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                             JObject[] values = (jsonResponse.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
                                 .Select(item => (JObject)item).ToArray();
                             var valueJson = JToken.FromObject(values);
-                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {valueJson}");
+                            //_logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {valueJson}");
                             result[meta.entityName] = valueJson;
                         }
                         catch (Exception excp)
@@ -78,7 +78,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                             JObject[] values = (jsonResponse.GetValue("value")?.ToArray() ?? Array.Empty<JObject>())
                                 .Select(item => (JObject)item).ToArray();
 
-                            _logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {jsonResponse}");
+                            //_logger.LogInformation($"FetchLookUpData | {meta.tag} | itmes: {jsonResponse}");
                             result[meta.entityName] = JToken.FromObject(values);
                         }
                         catch (Exception excp)
