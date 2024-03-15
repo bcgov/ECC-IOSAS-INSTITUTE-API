@@ -106,7 +106,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         public string externalIdKey;
         public string tag;
         public List<D365ModelMetdaData> lookupsMetaData = new ();
-        public JObject lookUps = new ();
+        public JObject LookUps = new ();
         protected D365ModelMetdaData(string tag, string entity, string key, string businessKey)
         {
             this.tag = tag;
@@ -275,7 +275,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override JObject GetD365DataModel(D365Model model)
         {
-            return model.ToIOSAS(this.lookUps);
+            return model.ToIOSAS(this.LookUps);
         }
     }
 
@@ -303,7 +303,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override JObject GetD365DataModel(D365Model model)
         {
-            return model.ToIOSAS(this.lookUps);
+            return model.ToIOSAS(this.LookUps);
         }
     }
 
@@ -338,7 +338,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         
         public override JObject GetD365DataModel(D365Model model)
         {
-            return model.ToIOSAS(this.lookUps);
+            return model.ToIOSAS(this.LookUps);
         }
 
     

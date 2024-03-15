@@ -1,6 +1,6 @@
-﻿using static System.Net.Mime.MediaTypeNames;
-using ECC.Institute.CRM.IntegrationAPI.Model;
+﻿using ECC.Institute.CRM.IntegrationAPI.Model;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace ECC.Institute.CRM.IntegrationAPI
 {
@@ -41,6 +41,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
         private readonly ID365WebAPIService _d365webapiservice;
         private readonly ILogger _logger;
         private readonly LookUpService _loopupService;
+        private static List<JObject> _History = new();
+        private static long HistoryLength = 100;
         public Application(ID365WebAPIService d365webapiservice, ILogger logger)
         {
             _d365webapiservice = d365webapiservice ?? throw new ArgumentNullException(nameof(d365webapiservice));
@@ -54,6 +56,26 @@ namespace ECC.Institute.CRM.IntegrationAPI
             {
                 return _loopupService;
             }
+        }
+
+
+        public static List<JObject> GetHistory()
+        {
+            return _History;
+        }
+
+        private static void SetHistory(D365ModelMetdaData meta, JObject result)
+        {
+            if (_History.Count > HistoryLength + 1)
+            {
+                _History.RemoveAt(0);
+            }
+            JObject entry = new()
+            {
+                ["time"] = DateTime.Now.ToString("yyyy-MMM-dd HH:mm:ss"),
+                ["result"] = result
+            };
+            _History.Add(entry);
         }
 
         public string DistrictUpsertIOSAS(SchoolDistrict[] districts)
@@ -352,6 +374,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                         resp = this.CreateAtomic(model, meta);
                     }
                     status["status"] = "success";
+                    status["info"] = JToken.Parse(resp);
                 }
                 catch (Exception excp)
                 {
@@ -363,6 +386,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
             result["errors"] = JArray.FromObject(errors.ToArray());
             result["statuses"] = JArray.FromObject(statuses.ToArray());
+            result["success"] = errors.Count > 0 ? false : true;
+            SetHistory(meta, result);
             if (errors.Count > 0)
             {
                 throw new Exception($"{result}");
@@ -372,56 +397,71 @@ namespace ECC.Institute.CRM.IntegrationAPI
 
         public string UpdateAtomic(D365Model model, D365ModelMetdaData meta, string[] existings)
         {
-            var resultsSuccess = new List<string>()
-            {
-                 $"UpdateAtomic | D365 | {meta.tag} | Following itmes are updated: {existings}"
-            };
-            var resultFailure = new List<string>
-            {
-                $"UpdateAtomic | D365 | {meta.tag} | Error: Received follwing errors: {existings}"
-            };
+            List<JObject> sucessStatuses = new();
+            List<JObject> failureStatuses = new();
             var json = meta.GetD365DataModel(model);
             var body = json.ToString();
+            JObject updateStatus = new();
+            updateStatus["incoming"] = JToken.Parse(JsonConvert.SerializeObject(model, Formatting.None));
+            updateStatus["outgoing"] = json;
+            updateStatus["action"] = "update";
+            _logger.LogInformation($"UpdateAtomic| D365 | {meta.tag} | model | {JToken.FromObject(model)}");
             _logger.LogInformation($"UpdateAtomic | D365 | {meta.tag} | Request {body}");
             foreach (string id in existings)
             {
-
-                var resp = _d365webapiservice.SendUpdateRequestAsync(meta.IdQuery(id), body);
+                JObject opsStatus = new();
                 var marker = $"UpdateAtomic | {meta.tag} | [{id}/ {model.KeyValue()}]";
+                opsStatus["tag"] = marker;
+                opsStatus["d365-id"] = id;
+                var resp = _d365webapiservice.SendUpdateRequestAsync(meta.IdQuery(id), body);
+                opsStatus["response"] = ResponseDescription(resp);
                 if (resp.IsSuccessStatusCode)
                 {
                     _logger.LogInformation($"{marker} | Success | {ResponseDescription(resp)}");
-                    resultsSuccess.Add($"{marker} | Success | {ResponseDescription(resp)}");
+                    opsStatus["status"] = "sucess";
+                    sucessStatuses.Add(opsStatus);
                 }
                 else
                 {
                     _logger.LogInformation($"{marker} | Fail | {ResponseDescription(resp)}");
-                    resultFailure.Add($"{marker} | Fail | {ResponseDescription(resp)}");
-                    resultFailure.Add($"{marker} | Fail | Body | {body}");
-
+                    opsStatus["status"] = "fail";
+                    failureStatuses.Add(opsStatus);
                 }
             }
-            if (resultFailure.Count > 1)
+            updateStatus["successStatuses"] = JToken.FromObject(sucessStatuses);
+            updateStatus["failureStatuses"] = JToken.FromObject(failureStatuses);
+            if (failureStatuses.Count > 1)
             {
-                throw new Exception(string.Join("\n", resultFailure));
+                throw new Exception($"{JToken.FromObject(updateStatus)}");
             }
-            return string.Join("\n", resultsSuccess);
+            return $"{JToken.FromObject(updateStatus)}";
         }
         private string CreateAtomic(D365Model model, D365ModelMetdaData meta)
         {
+            JObject status = new();
             var json = meta.GetD365DataModel(model);
             var body = json.ToString();
             var marker = $"CreateAtomic | {meta.tag} | [{model.KeyValue()}] | body: {body}";
             var resp = _d365webapiservice.SendCreateRequestAsync($"{meta.entityName}", body);
+            status["action"] = "Create";
+            status["incoming"] = JToken.Parse(JsonConvert.SerializeObject(model, Formatting.None));
+            status["outgoing"] = json;
+            _logger.LogInformation($"CreateAtomic| D365 | {meta.tag} | model | {JToken.FromObject(model)}");
+            _logger.LogInformation($"CreateAtomic | D365 | {meta.tag} | Request {body}");
             if (resp.IsSuccessStatusCode)
             {
                 _logger.LogInformation($"{marker} | Success | {ResponseDescription(resp)}");
-                return $"{marker} | Success | {ResponseDescription(resp)}";
+                status["status"] = "sucess";
+                status["response"] = ResponseDescription(resp);
+                return $"{status}";
             }
             else
             {
                 _logger.LogInformation($"{marker} | Fail | {ResponseDescription(resp)}");
-                throw new Exception($"{marker} | Fail | {ResponseDescription(resp)} | body | {json}");
+                status["status"] = "fail";
+                status["body"] = json;
+                status["response"] = ResponseDescription(resp);
+                throw new Exception($"{status}");
             }
         }
     }

@@ -6,6 +6,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using ECC.Institute.CRM.IntegrationAPI.Filters;
+using ECC.Institute.CRM.IntegrationAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,9 +34,13 @@ builder.Services.Configure<List<D365AppSettings>>(builder.Configuration.GetSecti
 builder.Services.Configure<ApiBehaviorOptions>(options
     => options.SuppressModelStateInvalidFilter = true);
 
+// Add request body middlewar
+
 //services.Configure<List<IDP>>(Configuration.GetSection("IDP"));
 
 var app = builder.Build();
+
+app.UseRawRequestBodyMiddleware();
 
 
 

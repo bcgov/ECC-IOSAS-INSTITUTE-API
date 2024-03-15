@@ -156,6 +156,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
 
             }
+            lookups["result"] = result;
             return result;
         }
         public JObject ToISFS(JObject lookups)
@@ -195,6 +196,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result["edu_Region@odata.bind"] = $"edu_regions({regionId})";
 
             }
+            lookups["result"] = result;
             return result;
         }
 

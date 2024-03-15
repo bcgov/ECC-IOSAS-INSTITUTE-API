@@ -131,6 +131,15 @@ namespace ECC.Institute.CRM.IntegrationAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet("/history")]
+        public ActionResult<string> GetHistory()
+        {
+            var history = new List<JObject>(Application.GetHistory());
+            history.Reverse();
+            return Ok($"{JToken.FromObject(history)}");
+        }
+
         [HttpPost("/import/{applicationName}/{entityName}")]
         public ActionResult<string> Import([FromRoute] string applicationName, [FromRoute] string entityName, IFormFile file, Boolean isVerifyOnly = true)
         {

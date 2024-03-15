@@ -63,7 +63,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override JObject GetD365DataModel(D365Model model)
         {
-            return model.ToISFS(this.lookUps);
+            return model.ToISFS(this.LookUps);
         }
     }
 
@@ -87,7 +87,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override JObject GetD365DataModel(D365Model model)
         {
-            return (model is SchoolAuthority authority) ? authority.ISFS(this.lookUps) : model.ToIOSAS(this.lookUps);
+            return (model is SchoolAuthority authority) ? authority.ISFS(this.LookUps) : model.ToIOSAS(this.LookUps);
         }
     }
 
@@ -128,7 +128,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override JObject GetD365DataModel(D365Model model)
         {
-            return model.ToISFS(this.lookUps);
+            return model.ToISFS(this.LookUps);
         }
     }
 
@@ -153,7 +153,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         public override JObject GetD365DataModel(D365Model model)
         {
-            return model.ToISFS(this.lookUps);
+            return model.ToISFS(this.LookUps);
         }
     }
 }

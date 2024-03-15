@@ -177,7 +177,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 }
 			}
 			result["errors"] = errors;
-			meta.lookUps = result;
+			meta.LookUps = result;
 			return result;
 		}
 

@@ -366,7 +366,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             {
                 result.Add(group);
             }
-
+            lookups["result"] = result;
             return result;
         }
         public JObject ToISFS(JObject lookups)
@@ -451,7 +451,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             {
                 result.Add(group);
             }
-
+            lookups["result"] = result;
             return result;
         }
         private string? GetAuthorityNumber(JObject lookups)
