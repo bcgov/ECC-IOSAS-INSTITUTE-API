@@ -27,8 +27,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Middleware
             var print = bodyAsText == "" ? "None" : bodyAsText;
 
             // Print the raw request body
-            _logger.LogInformation($"Raw Http Request:[{context.Request.Method}] {context.Request.Path}");
-            Console.WriteLine($"RequestBodyMiddleware: Raw Http Request:[{context.Request.Method}] {context.Request.Path} | body:{print}");
+            string time = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss");
+            _logger.LogInformation($"[{time}]: Raw Http Request:[{context.Request.Method}] {context.Request.Path}");
+            Console.WriteLine($"[RequestBodyMiddleware]:[{time}]: Raw Http Request:[{context.Request.Method}] {context.Request.Path} | body:{print}");
 
             // Important: reset the request body stream position to the beginning
             context.Request.Body.Position = 0;
