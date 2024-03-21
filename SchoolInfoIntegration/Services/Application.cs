@@ -285,7 +285,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             result["ops"] = "updateV2";
             result["tag"] = meta.tag;
             result["metaClass"] = meta.GetType().Name;
-            var errors = new List<string>();
+            var errors = new List<JToken>();
             var failure = new List<string>();
             var statuses = new List<JObject>();
             // Case 1: No itmes
@@ -379,8 +379,8 @@ namespace ECC.Institute.CRM.IntegrationAPI
                 catch (Exception excp)
                 {
                     status["status"] = "error";
-                    status["error"] = excp.Message;
-                    errors.Add(excp.Message);
+                    status["error"] = JToken.Parse(excp.Message);
+                    errors.Add(JToken.Parse(excp.Message));
                 }
                 statuses.Add(status);
             }
@@ -430,7 +430,7 @@ namespace ECC.Institute.CRM.IntegrationAPI
             }
             updateStatus["successStatuses"] = JToken.FromObject(sucessStatuses);
             updateStatus["failureStatuses"] = JToken.FromObject(failureStatuses);
-            if (failureStatuses.Count > 1)
+            if (failureStatuses.Count > 0)
             {
                 throw new Exception($"{JToken.FromObject(updateStatus)}");
             }
