@@ -67,6 +67,25 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     }
 
+    public enum SchoolGradeCode
+    {
+        KgHalf = 100000000,
+        KgFull = 100000001,
+        Grade1 = 100000002,
+        Grade2 = 100000003,
+        Grade3 = 100000004,
+        Grade4 = 100000005,
+        Grade6 = 100000007,
+        Grade7 = 100000008,
+        Grade8 = 100000009,
+        Grade9 = 1000000010,
+        Grade10 = 100000011,
+        Grade11 = 100000012,
+        Grade12 = 100000013,
+        Ug = 100000014,
+        Sg = 100000015
+    }
+
     public enum SchoolFacilityCode
     {
         Standard = 757500000, // 757500000
@@ -131,6 +150,16 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
         [JsonPropertyName("expiryDate")]
         public string? ExpiryDate { get; set; }
+    }
+
+    public class SchoolGrade
+    {
+        [JsonPropertyName("schoolGradeCode")]
+        [Required]
+        public string SchoolGradeCode;
+
+        [JsonPropertyName("label")]
+        public string? Label;
     }
 
     public partial class School: D365Model
@@ -236,6 +265,9 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         [JsonPropertyName("contacts")]
         public SchoolContact[]? Contacts { get; set; }
 
+        [JsonPropertyName("grades")]
+        public SchoolGrade[]? Grades;
+
 
         private SchoolCategory Category()
         {
@@ -248,6 +280,67 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 default:
                     return SchoolCategory.Independent;
             }
+        }
+
+        private static SchoolGradeCode GradeTransformar(string gradeStr)
+        {
+            switch (gradeStr)
+            {
+                case "KINDHALF":
+                    return SchoolGradeCode.KgHalf;
+
+                case "KINDFULL":
+                    return SchoolGradeCode.KgFull;
+
+                case "GRADE01":
+                    return SchoolGradeCode.Grade1;
+
+                case "GRADE02":
+                    return SchoolGradeCode.Grade2;
+
+                case "GRADE03":
+                    return SchoolGradeCode.Grade3;
+
+                case "GRADE04":
+                    return SchoolGradeCode.Grade4;
+
+                case "GRADE06":
+                    return SchoolGradeCode.Grade6;
+
+                case "GRADE07":
+                    return SchoolGradeCode.Grade7;
+
+                case "ELEMUNGR":
+                    return SchoolGradeCode.Ug;
+
+                case "GRADE08":
+                    return SchoolGradeCode.Grade8;
+
+                case "GRADE09":
+                    return SchoolGradeCode.Grade9;
+
+                case "GRADE10":
+                    return SchoolGradeCode.Grade10;
+
+                case "GRADE11":
+                    return SchoolGradeCode.Grade11;
+
+                case "GRADE12":
+                    return SchoolGradeCode.Grade12;
+
+                case "SECUNGR":
+                    return SchoolGradeCode.Sg;
+                default:
+                    return SchoolGradeCode.Grade1;
+            }
+        }
+        private string[]? _Grades()
+        {
+            return this.Grades?.ToList().Select( grade => ((long)GradeTransformar(grade.SchoolGradeCode)).ToString()).ToArray();
+        }
+        private string? _GradeString()
+        {
+            return _Grades() is var data && data != null ? string.Join(",", data) : null;
         }
 
         private SchoolFacilityCode Facility()
@@ -365,6 +458,11 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             if (GetFundingGroup(lookups, false) is var group && group != null)
             {
                 result.Add(group);
+            }
+            // Grades
+            if (_GradeString() is var grades && grades != null)
+            {
+                result["iosas_availablegrades"] = grades;
             }
             lookups["result"] = result;
             return result;
