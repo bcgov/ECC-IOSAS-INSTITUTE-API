@@ -67,7 +67,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
 
     }
 
-    public enum SchoolGradeCode
+    public enum SchoolGradeCodeIOSAS
     {
         KgHalf = 100000000,
         KgFull = 100000001,
@@ -84,6 +84,24 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
         Grade12 = 100000013,
         Ug = 100000014,
         Sg = 100000015
+    }
+    public enum SchoolGradeCodeISFS
+    {
+        KgHalf = 757500000,
+        KgFull = 757500001,
+        Grade1 = 757500002,
+        Grade2 = 757500003,
+        Grade3 = 757500004,
+        Grade4 = 757500005,
+        Grade6 = 757500007,
+        Grade7 = 757500008,
+        Grade8 = 757500009,
+        Grade9 = 757500010,
+        Grade10 = 757500011,
+        Grade11 = 757500012,
+        Grade12 = 757500013,
+        Ug = 757500014,
+        Sg = 757500015
     }
 
     public enum SchoolFacilityCode
@@ -282,65 +300,122 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             }
         }
 
-        private static SchoolGradeCode GradeTransformar(string gradeStr)
+        private static SchoolGradeCodeIOSAS GradeTransformarIOSAS(string gradeStr)
         {
             switch (gradeStr)
             {
                 case "KINDHALF":
-                    return SchoolGradeCode.KgHalf;
+                    return SchoolGradeCodeIOSAS.KgHalf;
 
                 case "KINDFULL":
-                    return SchoolGradeCode.KgFull;
+                    return SchoolGradeCodeIOSAS.KgFull;
 
                 case "GRADE01":
-                    return SchoolGradeCode.Grade1;
+                    return SchoolGradeCodeIOSAS.Grade1;
 
                 case "GRADE02":
-                    return SchoolGradeCode.Grade2;
+                    return SchoolGradeCodeIOSAS.Grade2;
 
                 case "GRADE03":
-                    return SchoolGradeCode.Grade3;
+                    return SchoolGradeCodeIOSAS.Grade3;
 
                 case "GRADE04":
-                    return SchoolGradeCode.Grade4;
+                    return SchoolGradeCodeIOSAS.Grade4;
 
                 case "GRADE06":
-                    return SchoolGradeCode.Grade6;
+                    return SchoolGradeCodeIOSAS.Grade6;
 
                 case "GRADE07":
-                    return SchoolGradeCode.Grade7;
+                    return SchoolGradeCodeIOSAS.Grade7;
 
                 case "ELEMUNGR":
-                    return SchoolGradeCode.Ug;
+                    return SchoolGradeCodeIOSAS.Ug;
 
                 case "GRADE08":
-                    return SchoolGradeCode.Grade8;
+                    return SchoolGradeCodeIOSAS.Grade8;
 
                 case "GRADE09":
-                    return SchoolGradeCode.Grade9;
+                    return SchoolGradeCodeIOSAS.Grade9;
 
                 case "GRADE10":
-                    return SchoolGradeCode.Grade10;
+                    return SchoolGradeCodeIOSAS.Grade10;
 
                 case "GRADE11":
-                    return SchoolGradeCode.Grade11;
+                    return SchoolGradeCodeIOSAS.Grade11;
 
                 case "GRADE12":
-                    return SchoolGradeCode.Grade12;
+                    return SchoolGradeCodeIOSAS.Grade12;
 
                 case "SECUNGR":
-                    return SchoolGradeCode.Sg;
+                    return SchoolGradeCodeIOSAS.Sg;
                 default:
-                    return SchoolGradeCode.Grade1;
+                    return SchoolGradeCodeIOSAS.Grade1;
             }
         }
-        private string[]? _Grades()
+        private static SchoolGradeCodeISFS GradeTransformarISFS(string gradeStr)
         {
-            return this.Grades?.ToList().Select( grade => ((long)GradeTransformar(grade.SchoolGradeCode)).ToString()).ToArray();
+            switch (gradeStr)
+            {
+                case "KINDHALF":
+                    return SchoolGradeCodeISFS.KgHalf;
+
+                case "KINDFULL":
+                    return SchoolGradeCodeISFS.KgFull;
+
+                case "GRADE01":
+                    return SchoolGradeCodeISFS.Grade1;
+
+                case "GRADE02":
+                    return SchoolGradeCodeISFS.Grade2;
+
+                case "GRADE03":
+                    return SchoolGradeCodeISFS.Grade3;
+
+                case "GRADE04":
+                    return SchoolGradeCodeISFS.Grade4;
+
+                case "GRADE06":
+                    return SchoolGradeCodeISFS.Grade6;
+
+                case "GRADE07":
+                    return SchoolGradeCodeISFS.Grade7;
+
+                case "ELEMUNGR":
+                    return SchoolGradeCodeISFS.Ug;
+
+                case "GRADE08":
+                    return SchoolGradeCodeISFS.Grade8;
+
+                case "GRADE09":
+                    return SchoolGradeCodeISFS.Grade9;
+
+                case "GRADE10":
+                    return SchoolGradeCodeISFS.Grade10;
+
+                case "GRADE11":
+                    return SchoolGradeCodeISFS.Grade11;
+
+                case "GRADE12":
+                    return SchoolGradeCodeISFS.Grade12;
+
+                case "SECUNGR":
+                    return SchoolGradeCodeISFS.Sg;
+                default:
+                    return SchoolGradeCodeISFS.Grade1;
+            }
         }
-        private string? _GradeString()
+        private string[]? _GradesIOSAS()
         {
-            return _Grades() is var data && data != null ? string.Join(",", data) : null;
+            return this.Grades?.ToList().Select( grade => ((long)GradeTransformarIOSAS(grade.SchoolGradeCode)).ToString()).ToArray();
+        }
+        private string? _GradeStringIOSAS()
+        {
+            return _GradesIOSAS() is var data && data != null ? string.Join(",", data) : null;
+        }
+        private string? _GradeISFS()
+        {
+            string[]? gradeStrs = this.Grades?.ToList().Select(grade => ((long)GradeTransformarISFS(grade.SchoolGradeCode)).ToString()).ToArray();
+            return gradeStrs != null && gradeStrs.Length > 0 ? string.Join(",", gradeStrs) : null;
         }
 
         private SchoolFacilityCode Facility()
@@ -460,7 +535,7 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
                 result.Add(group);
             }
             // Grades
-            if (_GradeString() is var grades && grades != null)
+            if (_GradeStringIOSAS() is var grades && grades != null)
             {
                 result["iosas_availablegrades"] = grades;
             }
@@ -548,6 +623,12 @@ namespace ECC.Institute.CRM.IntegrationAPI.Model
             if (GetFundingGroup(lookups) is var group && group != null)
             {
                 result.Add(group);
+            }
+
+            // Grade
+            if (_GradeISFS() is var grades && grades != null)
+            {
+                result["edu_availablegrades"] = grades;
             }
             lookups["result"] = result;
             return result;
