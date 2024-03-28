@@ -20,11 +20,15 @@ In addition to data transformation and loading capabilities, our application pro
 
 The .NET API layer of our application is deployed on OpenShift using Deployment Configurations. This deployment strategy ensures high availability, scalability, and security for the application, enabling it to handle data integration tasks efficiently and reliably.
 
+## Architecture Diagram
+
+![Architecture Diagram](./docs/drawings/IOSAS_ISFS-API-Integration.png)
+
 ## Local Development Setup
 
 To set up the middleware application for local development, please follow the steps outlined below. These steps will guide you through the process of setting up the development environment, cloning the repository, and running the application on your local machine.
 
-### Prerequisites
+### Prerequisites of local deployment
 
 - Microsoft Visual Studio 17.6 or above installed on your local machine.
 
@@ -34,7 +38,7 @@ To set up the middleware application for local development, please follow the st
 
     Begin by cloning the repository to your local machine. Open your terminal or command prompt and run the following command:
 
-    ```
+    ```bash
     git clone https://github.com/bcgov/ECC-IOSAS-INSTITUTE-API
     ```
 
@@ -46,7 +50,7 @@ To set up the middleware application for local development, please follow the st
 
     Access the GitHub repository's web interface and navigate to the following location to find the development environment configuration:
 
-    ```
+    ```md
     Settings > Security > Secrets and variables > Actions > Variables
     ```
 
@@ -64,7 +68,7 @@ To set up the middleware application for local development, please follow the st
 
     Once the application is running, Visual Studio will automatically open the default web browser and navigate to the Swagger API documentation page at:
 
-    ```
+    ```curl
     https://localhost:7251/swagger/index.html
     ```
 
@@ -74,7 +78,8 @@ To set up the middleware application for local development, please follow the st
 
 This section outlines the steps for building and deploying the .NET Web API, which serves as a middleware for MS Dynamics 365, using OpenShift. The process utilizes a `Makefile` to automate tasks such as building the Docker image, creating certificates, and deploying the application to OpenShift. 
 
-### Prerequisites
+### Prerequisites of OpenShift Deployment
+
 - Access to an OpenShift cluster with appropriate permissions.
 - The `oc` CLI tool installed and configured to communicate with your OpenShift cluster.
 - A clone of the repository containing the `Makefile`.
@@ -85,7 +90,7 @@ This section outlines the steps for building and deploying the .NET Web API, whi
 
 2. **Build the API Container Image**: Execute the following command to initiate the build process for the API container image. This step uses the `build-api` target in the `Makefile` and relies on the `openshift/docker-build.yml` template for configurations.
 
-    ```
+    ```bash
     make oc-build-api
     ```
 
@@ -95,13 +100,13 @@ This section outlines the steps for building and deploying the .NET Web API, whi
 
 1. **Initialize API Configuration**: Before deploying, ensure that the API's configuration is properly set up in a configMap within OpenShift. This is done using the `init-api` target, which reads the `APP_CONFIG` environment variable and creates an `appsettings.json` within the API container.
 
-    ```
+    ```bash
     make init-api
     ```
 
 2. **Deploy the API Container**: Use the following command to deploy the API container using the deployment configuration. This step also handles the creation of a service certificate for the .NET API server.
 
-    ```
+    ```bash
     make oc-deploy-api
     ```
 
@@ -111,7 +116,7 @@ This section outlines the steps for building and deploying the .NET Web API, whi
 
 After successful deployment, the API will be accessible within the OpenShift cluster. You can create a port-forwarding tunnel to access the Swagger UI locally using the `d365-api-tunnel` target:
 
-```
+```bash
 make d365-api-tunnel
 ```
 
@@ -181,16 +186,19 @@ To report bugs/issues/features requests, please file an [issue](https://github.c
 
 ## License
 
-    Copyright 2020 Province of British Columbia
+```md
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+        Copyright 2020 Province of British Columbia
 
-       http://www.apache.org/licenses/LICENSE-2.0
+        Licensed under the Apache License, Version 2.0 (the "License");
+        you may not use this file except in compliance with the License.
+        You may obtain a copy of the License at
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+        http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+```
