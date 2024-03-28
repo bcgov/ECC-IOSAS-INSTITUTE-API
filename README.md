@@ -179,10 +179,24 @@ To trigger manual deployments or promotions:
 
 This CI/CD pipeline automates the process of integrating, building, and deploying applications to various environments. It leverages GitHub Actions for both automatic and manual workflows, ensuring that the application remains up-to-date and stable across all development stages.
 
+## API Documenation
+
+Please find detailed [documentaion](/docs/iosas_isfs-api.doc.md) and static [swagger-json](/docs/iosas_isfs-api-swagger.json)
+
+### Access dynamic swagger documenation page
+
+After running application locally we can access live swgger docuemenation on
+
+```curl
+ https://localhost:7251/swagger/index.html
+```
+
+We can access the api swagger deployed in openshift after [port forwarding](#accessing-the-swagger-ui)
+
 
 ## Getting Help or Reporting an Issue
 
-To report bugs/issues/features requests, please file an [issue](https://github.com/bcgov/ECC-IOSAS/issues).
+To report bugs/issues/features requests, please file an [issue](https://github.com/bcgov/ECC-IOSAS-INSTITUTE-API/issues).
 
 ## License
 
