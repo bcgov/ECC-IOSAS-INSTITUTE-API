@@ -86,11 +86,12 @@ endef
 
 current_datetime := $(shell date '+%Y%m%d%H%M%S')
 
+# Not required
 init-oc: | print-status init-project
+# Build api container image with logging
 oc-build-api: | print-status build-api
+# Deploy api container using deployment config with logging
 oc-deploy-api: | print-status deploy-api
-oc-build-web: | print-status build-web
-oc-deploy-web: | print-status deploy-web
 
 
 
@@ -99,6 +100,7 @@ oc-deploy-web: | print-status deploy-web
 
 
 
+# Logging
 print-status:
 	@echo " +---------------------------------------------------------+ "
 	@echo " | Current Settings                                        | "
@@ -117,7 +119,7 @@ print-status:
 	@echo " +---------------------------------------------------------+ "
 
 
-
+# Create certificate for Dot Net API server
 api-create-certificate:
 	@echo "\n++ Creating service certificate ++\n"
 	@openssl genpkey -algorithm RSA -out server.key
@@ -132,13 +134,14 @@ api-create-certificate:
 	@echo "\n ++ certificate creation completed ++\n"
 
 
-
+# Initializing api configMap with `APP_CONFIG` enviornment variable which will be saved as appsetting.json inside api container. APP_CONFIG will be created from Github variable
 init-api:
 	@echo "++\n Init Api in $(NAMESPACE) \n++"
 	@oc -n $(NAMESPACE) delete configmap $(API)-$(ENV_PREFIX)-config || true
 	@oc -n $(NAMESPACE) create configmap $(API)-$(ENV_PREFIX)-config --from-literal=appsettings.json='$(APP_CONFIG)'
 
 
+# Not required
 init-artifactory-secret-credential:
 	test -n $(NAMESPACE)
 	@oc create secret docker-registry artifactory-secret-credential -n $(NAMESPACE) \
@@ -149,6 +152,7 @@ init-artifactory-secret-credential:
 	@oc secrets link default artifactory-secret-credential
 	@oc secrets link builder artifactory-secret-credential
 
+# Build Dot Net API image on OpenShift tools namespace using build config file (/tools/openshift/docker-build.yml)
 build-api:
 	test -n "$(BUILD_REF)"
 	test -n "$(BUILD_NAMESPACE)"
@@ -166,7 +170,7 @@ build-api:
 	@oc -n $(BUILD_NAMESPACE) tag $(API):$(BUILD_TAG) $(API):$(current_datetime)
 
 
-
+# Update deployment config
 update-dc-api:
 	test -n "$(NAMESPACE)"
 	test -n "$(BUILD_NAMESPACE)"
@@ -183,10 +187,12 @@ update-dc-api:
 		-p MEMORY_LIMIT=$(MAX_MEMORY) \
 		-p REPLICAS=$(MIN_REPLICA) | oc -n $(NAMESPACE) apply -f -
 
+# Deployment rollout the API container
 deploy-api: update-dc-api
 	@oc rollout cancel dc/$(API) 2> /dev/null || true && echo "No rollout in progress"
 	@oc -n $(NAMESPACE) rollout status dc/$(API) --watch=true
 
+# Promoting imange on diff OpenShift namespaces 
 promote-api:
 	test -n "$(BUILD_NAMESPACE)"
 	echo "+\n++ API: Deploying latest tag $(BUILD_TAG) API with ENV $(ENV_PREFIX) $\n+"
@@ -198,7 +204,7 @@ d365-api-tunnel: print-status
 	@oc -n $(NAMESPACE) port-forward svc/$(API) 5091
 
 
-# Tagging env
+# Tagging build in github
 tag-commit:
 	@echo "Tagging commit with date-time: $(current_datetime)"
 	@git tag -fa $(ENV_PREFIX)-$(current_datetime) -m "$(ENV_PREFIX): Tagging the deployment"
